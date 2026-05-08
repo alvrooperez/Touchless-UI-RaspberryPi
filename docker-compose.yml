@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  touchless_ui:
+    build: .
+    devices:
+      - "/dev/video0:/dev/video0"
+      - "/dev/gpiomem:/dev/gpiomem"
+    privileged: true
+    environment:
+      - MQTT_BROKER=192.168.1.100
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
