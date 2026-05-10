@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     v4l-utils \
     gcc \
     python3-dev \
+    libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
