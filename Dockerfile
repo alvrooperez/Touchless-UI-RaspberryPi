@@ -1,4 +1,4 @@
-FROM python:3.9-slim-buster
+FROM python:3.9-slim-bookworm
 
 RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
@@ -6,6 +6,8 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     v4l-utils \
+    gcc \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
