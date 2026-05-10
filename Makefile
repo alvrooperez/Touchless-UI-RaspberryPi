@@ -33,6 +33,16 @@ restart:
 logs:
 	docker compose logs -f
 
+# Ejecutar tests (Ejemplo: make test o make test FILE=tests/test_web.py)
+test:
+	@if [ -z "$(FILE)" ]; then \
+		echo "Ejecutando todos los tests..."; \
+		python3 -m unittest discover tests; \
+	else \
+		echo "Ejecutando test: $(FILE)"; \
+		python3 $(FILE); \
+	fi
+
 # Limpieza profunda
 clean:
 	docker compose down --rmi all --volumes --remove-orphans
