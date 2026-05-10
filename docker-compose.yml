@@ -11,4 +11,6 @@ services:
       - MQTT_BROKER=192.168.1.100
     ports:
       - "8080:8080"
+    volumes:
+      - ./src:/app/src
     restart: unless-stopped
