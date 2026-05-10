@@ -33,14 +33,18 @@ restart:
 logs:
 	docker compose logs -f
 
-# Ejecutar un test específico DENTRO del contenedor (Debe estar UP)
-# Ejemplo: make test FILE=tests/test_web.py
+# Ejecutar un test específico por nombre (Debe estar UP)
+# Ejemplo: make test test_web
 test:
-	@if [ -z "$(FILE)" ]; then \
-		echo "Error: Especifica un archivo. Ejemplo: make test FILE=tests/test_web.py"; \
+	@if [ -z "$(filter-out test,$(MAKECMDGOALS))" ]; then \
+		echo "Error: Especifica el nombre del test. Ejemplo: make test test_web"; \
 		exit 1; \
 	fi
-	docker compose exec touchless_ui python3 $(FILE)
+	docker compose exec touchless_ui python3 tests/$(filter-out test,$(MAKECMDGOALS)).py
+
+# Truco para que make no se queje de que el nombre del test no es un comando
+%:
+	@:
 
 # Limpieza profunda
 clean:
