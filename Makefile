@@ -33,15 +33,14 @@ restart:
 logs:
 	docker compose logs -f
 
-# Ejecutar tests (Ejemplo: make test o make test FILE=tests/test_web.py)
+# Ejecutar un test específico DENTRO del contenedor (Debe estar UP)
+# Ejemplo: make test FILE=tests/test_web.py
 test:
 	@if [ -z "$(FILE)" ]; then \
-		echo "Ejecutando todos los tests..."; \
-		python3 -m unittest discover tests; \
-	else \
-		echo "Ejecutando test: $(FILE)"; \
-		python3 $(FILE); \
+		echo "Error: Especifica un archivo. Ejemplo: make test FILE=tests/test_web.py"; \
+		exit 1; \
 	fi
+	docker compose exec touchless_ui python3 $(FILE)
 
 # Limpieza profunda
 clean:
