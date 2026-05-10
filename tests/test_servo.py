@@ -94,12 +94,12 @@ def test_servo_basico():
     print(f"  -> Posición CERRADO ({ANGULO_CERRADO}°)...")
     led(rojo=True)
     mover_servo(ANGULO_CERRADO)
-    time.sleep(0.5)
+    time.sleep(2)
 
     print(f"  -> Posición ABIERTO ({ANGULO_ABIERTO}°)...")
     led(verde=True)
     mover_servo(ANGULO_ABIERTO)
-    time.sleep(0.5)
+    time.sleep(2)
 
     print(f"  -> Volviendo a CERRADO ({ANGULO_CERRADO}°)...")
     led(rojo=True)
@@ -116,12 +116,12 @@ def test_servo_suave():
     print("  -> Subiendo...")
     for angulo in range(0, 91, 5):
         mover_servo(angulo)
-        time.sleep(0.02)
+        time.sleep(0.2)
 
     print("  -> Bajando...")
     for angulo in range(90, -1, -5):
         mover_servo(angulo)
-        time.sleep(0.02)
+        time.sleep(0.2)
 
     respuesta = input("  ¿El servo hizo el barrido suave? (s/n): ").strip().lower()
     assert respuesta == 's', "FALLO: Barrido suave no funcionó"
