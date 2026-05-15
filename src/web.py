@@ -1,30 +1,54 @@
-from flask import Flask, jsonify, render_template, Response
+from flask import Flask, jsonify, render_template, Response, request
 import time
+import queue
+import json
 
 app = Flask(__name__)
-system_state = {"last_gesture": "None", "uptime_seconds": 0}
+system_state = {"last_gesture": "None"}
+mqtt_queue = queue.Queue()
+command_queue = queue.Queue()
 
 @app.route('/')
 def index():
-    return render_template('index.html', gesture=system_state.get('last_gesture', 'None'))
+    return render_template('index.html')
 
 @app.route('/status')
 def status():
     return jsonify(system_state)
 
+@app.route('/api/command', methods=['POST'])
+def command():
+    data = request.json
+    if data and 'zone' in data and 'command' in data:
+        command_queue.put(data)
+        return jsonify({"status": "ok"}), 200
+    return jsonify({"error": "invalid payload"}), 400
+
 @app.route('/stream')
 def stream():
     def event_stream():
-        last_sent = None
+        last_gesture = None
         while True:
-            current = system_state.get('last_gesture', 'None')
-            if current != last_sent:
-                yield f"data: {current}\n\n"
-                last_sent = current
+            # Yield gesture if changed
+            current_gesture = system_state.get('last_gesture', 'None')
+            if current_gesture != last_gesture:
+                yield f"data: {current_gesture}\n\n"
+                last_gesture = current_gesture
+            
+            # Yield MQTT events
+            try:
+                while not mqtt_queue.empty():
+                    mqtt_event = mqtt_queue.get_nowait()
+                    yield f"data: {json.dumps(mqtt_event)}\n\n"
+            except queue.Empty:
+                pass
+                
             time.sleep(0.1)
     return Response(event_stream(), mimetype='text/event-stream')
 
-def run_web_server(state_dict):
-    global system_state
+def run_web_server(state_dict, mq_out=None, cmd_in=None):
+    global system_state, mqtt_queue, command_queue
     system_state = state_dict
+    if mq_out: mqtt_queue = mq_out
+    if cmd_in: command_queue = cmd_in
     app.run(host='0.0.0.0', port=8080, debug=False, use_reloader=False)
