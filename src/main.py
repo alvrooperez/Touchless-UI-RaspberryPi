@@ -12,6 +12,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(threadName)s] %
 
 frame_queue = queue.Queue(maxsize=1)
 gesture_queue = queue.Queue(maxsize=10)
+mqtt_queue = queue.Queue()
+command_queue = queue.Queue()
 shared_state = {"last_gesture": "None"}
 
 def capture_thread():
@@ -49,18 +51,19 @@ def inference_thread():
         except queue.Empty: pass
 
 def hardware_thread():
-    hw = HardwareController(os.environ.get("MQTT_BROKER"))
+    hw = HardwareController(os.environ.get("MQTT_BROKER"), mqtt_queue, command_queue)
     while True:
         try:
-            gesture = gesture_queue.get(timeout=1.0)
+            gesture = gesture_queue.get(timeout=0.1)
             hw.trigger_action(gesture)
         except queue.Empty: pass
+        hw.loop()
 
 if __name__ == "__main__":
     t1 = threading.Thread(target=capture_thread, name="Capture")
     t2 = threading.Thread(target=inference_thread, name="Inference")
     t3 = threading.Thread(target=hardware_thread, name="Hardware")
-    t4 = threading.Thread(target=run_web_server, args=(shared_state,), name="Web")
+    t4 = threading.Thread(target=run_web_server, args=(shared_state, mqtt_queue, command_queue), name="Web")
     
     for t in [t1, t2, t3, t4]:
         t.daemon = True
