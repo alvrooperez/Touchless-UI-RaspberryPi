@@ -2,7 +2,8 @@ import pytest
 import sys
 import os
 import time
-from unittest.mock import MagicMock
+import threading
+from unittest.mock import MagicMock, patch
 
 # Mock missing modules before importing from src.hardware
 sys.modules['paho'] = MagicMock()
@@ -24,6 +25,10 @@ def test_hardware_init(mocker):
     
     hw = HardwareController(mqtt_broker="127.0.0.1")
     assert hw.mqtt_broker == "127.0.0.1"
+    # Verify callbacks are assigned
+    assert hw.parking_ir_entry.when_activated is not None
+    assert hw.parking_ir_exit.when_activated is not None
+    assert hw.door_ir.when_activated is not None
 
 def test_parking_sensors(mocker):
     mocker.patch('src.hardware.Servo')
@@ -34,18 +39,43 @@ def test_parking_sensors(mocker):
     hw = HardwareController()
     hw.publish_state = MagicMock()
     
-    # Mocking instances separately
-    hw.parking_ir_entry = MagicMock()
-    hw.parking_ir_entry.is_active = True
-    hw.parking_ir_exit = MagicMock()
-    hw.parking_ir_exit.is_active = False
-    hw.door_ir = MagicMock()
-    hw.door_ir.is_active = False
-    
-    hw.loop()
-    
+    # Simulate car arrival
+    hw.on_car_arrival()
     assert hw.parking_red.on.called
     hw.publish_state.assert_called_with("home/parking/status", {"barrier": "closed", "car_waiting": True})
+    
+    # Simulate car departure
+    hw.on_car_departure()
+    assert hw.parking_servo.min.called
+    hw.publish_state.assert_called_with("home/parking/status", {"barrier": "closed", "car_waiting": False})
+
+def test_door_light_logic(mocker):
+    mocker.patch('src.hardware.Servo')
+    mocker.patch('src.hardware.LED')
+    mocker.patch('src.hardware.LineSensor')
+    mocker.patch('src.hardware.mqtt.Client')
+    mock_timer = mocker.patch('threading.Timer')
+    
+    hw = HardwareController()
+    hw.publish_state = MagicMock()
+    
+    # Person approaches
+    hw.on_door_approach()
+    assert hw.door_light.on.called
+    assert hw.light_on is True
+    assert mock_timer.call_count == 1
+    
+    # Check MQTT message
+    hw.publish_state.assert_called_with("home/door/status", {
+        "lock": "locked",
+        "courtesy_light": "on"
+    })
+    
+    # Person approaches again (should reset timer)
+    timer_instance = mock_timer.return_value
+    hw.on_door_approach()
+    assert timer_instance.cancel.called
+    assert mock_timer.call_count == 2
 
 def test_trigger_action_cooldown(mocker):
     mocker.patch('src.hardware.Servo')
