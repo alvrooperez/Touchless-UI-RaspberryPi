@@ -3,7 +3,7 @@ import logging
 import json
 import threading
 import paho.mqtt.client as mqtt
-from gpiozero import Servo, LED, LineSensor
+from gpiozero import Servo, LED, LineSensor, Button
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(threadName)s] %(message)s')
 
@@ -18,7 +18,14 @@ class HardwareController:
         self.parking_red = LED(22)
         self.parking_green = LED(23)
         self.parking_ir_entry = LineSensor(18)
-        self.parking_ir_exit = LineSensor(27)
+        
+        # El pulsador de salida es NC (Normalmente Cerrado). 
+        # En gpiozero, Button(pull_up=True) considera que estar en ON por defecto es 'no pulsado'.
+        # Si al pulsar se ABRE el circuito, usaremos pull_up=True.
+        # Si es un botón físico que queremos detectar cuando se PULSA (y cambia de ON a OFF), 
+        # usamos 'when_pressed' o 'when_released' según corresponda.
+        # Asumiendo que el botón "está en ON" y al darle se corta:
+        self.parking_btn_exit = Button(27, pull_up=True) 
         
         # Door components
         self.door_servo = Servo(24)
@@ -31,17 +38,18 @@ class HardwareController:
         self.last_action_time = 0
         self.cooldown_ms = 2000
         
-        # State tracking to prevent redundant MQTT messages
+        # State tracking
         self.car_waiting = False
         self.barrier_open = False
         self.door_unlocked = False
         self.light_on = False
         self.light_timer = None
         
-        # Sensor callbacks (Event-driven design)
+        # Sensor callbacks
         self.parking_ir_entry.when_activated = self.on_car_arrival
-        self.parking_ir_exit.when_activated = self.on_car_departure
-        self.door_ir.when_activated = self.on_door_approach
+        
+        # Si el botón está siempre en ON (cerrado) y al pulsar se ABRE:
+        self.parking_btn_exit.when_released = self.on_car_departure
         
         # MQTT Setup
         self.client = mqtt.Client()
