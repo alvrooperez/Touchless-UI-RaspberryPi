@@ -195,6 +195,15 @@ class HardwareController:
         self.light_on = False
         self.publish_state("home/door/status", {"lock": "unlocked" if self.door_unlocked else "locked", "courtesy_light": "off"})
 
+        # Estados Confirmados y Contadores de Estabilidad
+        self.stable_parking_ir = GPIO.input(self.PINS["parking_ir"])
+        self.stable_parking_btn = GPIO.input(self.PINS["parking_btn"])
+        self.stable_door_ir = GPIO.input(self.PINS["door_ir"])
+        
+        self.counts = {"parking_ir": 0, "parking_btn": 0, "door_ir": 0}
+        self.THRESHOLD = 5 # Lecturas consecutivas para confirmar (aprox 250ms)
+        self.last_btn_trigger = 0
+
     def loop(self):
         # 1. Procesar Comandos Web
         if self.command_queue and not self.command_queue.empty():
@@ -204,38 +213,50 @@ class HardwareController:
             elif cmd.get('zone') == 'door' and cmd.get('command') == 'UNLOCK':
                 self.unlock_door()
 
-        # 2. Detección de Sensores (Lógica simplificada como el test)
+        # 2. Detección con Integrador de Estabilidad
+        now = time.time()
         
-        # Sensor IR Parking
-        curr_parking_ir = GPIO.input(self.PINS["parking_ir"])
-        if curr_parking_ir != self.prev_parking_ir:
-            logging.info(f"Hardware: Parking IR state changed to {curr_parking_ir}")
-            if curr_parking_ir == 1: # Detección
-                logging.info("Hardware: Car arrived at entry sensor")
-                self.car_waiting = True
-                self.publish_state("home/parking/status", {"barrier": "open" if self.barrier_open else "closed", "car_waiting": True})
-            else:
-                logging.info("Hardware: Entry sensor cleared")
-                # Opcional: podrías poner self.car_waiting = False aquí si quieres que se borre al quitar la mano
-            self.prev_parking_ir = curr_parking_ir
+        # --- Sensor IR Parking ---
+        raw_ir = GPIO.input(self.PINS["parking_ir"])
+        if raw_ir != self.stable_parking_ir:
+            self.counts["parking_ir"] += 1
+            if self.counts["parking_ir"] >= self.THRESHOLD:
+                self.stable_parking_ir = raw_ir
+                if raw_ir == 1:
+                    logging.info("Hardware: Car detected (Stable)")
+                    self.car_waiting = True
+                    self.publish_state("home/parking/status", {"barrier": "open" if self.barrier_open else "closed", "car_waiting": True})
+                else:
+                    logging.info("Hardware: Entry sensor cleared (Stable)")
+        else:
+            self.counts["parking_ir"] = 0
 
-        # Botón Parking
-        curr_parking_btn = GPIO.input(self.PINS["parking_btn"])
-        if curr_parking_btn != self.prev_parking_btn:
-            logging.info(f"Hardware: Button state changed to {curr_parking_btn}")
-            if curr_parking_btn == 1: # Pulsado
-                logging.info("Hardware: Exit button pressed - Closing barrier")
-                self.car_waiting = False
-                self.close_parking()
-            self.prev_parking_btn = curr_parking_btn
+        # --- Botón Parking (Salida) ---
+        raw_btn = GPIO.input(self.PINS["parking_btn"])
+        if raw_btn != self.stable_parking_btn:
+            self.counts["parking_btn"] += 1
+            if self.counts["parking_btn"] >= self.THRESHOLD:
+                self.stable_parking_btn = raw_btn
+                # Solo disparamos en flanco de subida (pulsado) y con cooldown de 2s
+                if raw_btn == 1 and (now - self.last_btn_trigger > 2):
+                    logging.info("Hardware: Exit button pressed (Stable)")
+                    self.car_waiting = False
+                    self.close_parking()
+                    self.last_btn_trigger = now
+        else:
+            self.counts["parking_btn"] = 0
 
-        # Sensor IR Puerta
-        curr_door_ir = GPIO.input(self.PINS["door_ir"])
-        if curr_door_ir != self.prev_door_ir:
-            if curr_door_ir == 1:
-                logging.info("Hardware: Person detected inside")
-                self.door_light_on()
-            self.prev_door_ir = curr_door_ir
+        # --- Sensor IR Puerta ---
+        raw_door = GPIO.input(self.PINS["door_ir"])
+        if raw_door != self.stable_door_ir:
+            self.counts["door_ir"] += 1
+            if self.counts["door_ir"] >= self.THRESHOLD:
+                self.stable_door_ir = raw_door
+                if raw_door == 1:
+                    logging.info("Hardware: Person detected (Stable)")
+                    self.door_light_on()
+        else:
+            self.counts["door_ir"] = 0
 
         time.sleep(0.05)
 
