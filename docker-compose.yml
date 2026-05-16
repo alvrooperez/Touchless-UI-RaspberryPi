@@ -1,4 +1,14 @@
 services:
+  mqtt_broker:
+    image: eclipse-mosquitto:latest
+    container_name: mqtt_broker
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: unless-stopped
+
   touchless_ui:
     build: .
     devices:
@@ -6,25 +16,29 @@ services:
       - "/dev/gpiomem:/dev/gpiomem"
     privileged: true
     environment:
-      - MQTT_BROKER=192.168.1.100
+      - MQTT_BROKER=mqtt_broker
       - PYTHONPATH=/app
     ports:
       - "8080:8080"
     volumes:
       - ./src:/app/src
       - ./tests:/app/tests
+    depends_on:
+      - mqtt_broker
     restart: unless-stopped
 
   simulation:
     build: .
     command: ["python", "src/simulation.py"]
     environment:
-      - MQTT_BROKER=localhost
+      - MQTT_BROKER=mqtt_broker
       - PYTHONPATH=/app
     ports:
       - "8081:8080"
     volumes:
       - ./src:/app/src
+    depends_on:
+      - mqtt_broker
 
   camera-test:
     build: .
@@ -33,7 +47,7 @@ services:
       - "/dev/video0:/dev/video0"
     privileged: true
     environment:
-      - MQTT_BROKER=localhost
+      - MQTT_BROKER=mqtt_broker
       - MOCK_HARDWARE=1
       - GESTURE_VIP=Pointing_Up
       - GESTURE_PWD=Peace_Sign
@@ -42,6 +56,8 @@ services:
       - "8082:8080"
     volumes:
       - ./src:/app/src
+    depends_on:
+      - mqtt_broker
 
   hw-test:
     build: .

@@ -18,17 +18,17 @@ build:
 # Sistema REAL: Hardware real y Cámara real
 run-ui:
 	docker compose down
-	docker compose run --rm --name touchless_ui touchless_ui
+	docker compose run --rm --service-ports --name touchless_ui touchless_ui
 
 # Prueba de CÁMARA: Cámara real y Hardware simulado (Logs)
 run-camera-test:
 	docker compose down
-	docker compose run --rm --name camera_test camera-test
+	docker compose run --rm --service-ports --name camera_test camera-test
 
 # Simulación TOTAL: Todo por software (Ideal para desarrollo rápido)
 run-simulation:
 	docker compose down
-	docker compose run --rm --name simulation simulation
+	docker compose run --rm --service-ports --name simulation simulation
 
 # Test guiado e interactivo de PINOUTS y COMPONENTES
 test-hw:
