@@ -13,10 +13,8 @@ PINS = {
     },
     "door": {
         "servo": 24,
-        "red": 25,
-        "green": 8,
+        "buzzer": 7,
         "white": 5,
-        "ir": 7
     }
 }
 
@@ -70,6 +68,17 @@ def test_servo_guiado(name, pin):
     except Exception as e:
         print(f"  [ERROR] No se pudo probar {name}: {e}")
 
+def test_buzzer(name, pin):
+    print(f"\n[BUZZER] Probando: {name} (Pin BCM {pin})")
+    try:
+        GPIO.setup(pin, GPIO.OUT)
+        GPIO.output(pin, GPIO.HIGH)
+        input(f"  -> ¿Está sonando el buzzer? (Presiona ENTER para silenciar)")
+        GPIO.output(pin, GPIO.LOW)
+        print(f"  [OK] {name} silenciado.")
+    except Exception as e:
+        print(f"  [ERROR] No se pudo probar {name}: {e}")
+
 def test_input_manual(name, pin, is_button=False):
     print(f"\n[{'BOTÓN' if is_button else 'SENSOR'}] Probando: {name} (Pin BCM {pin})")
     try:
@@ -104,11 +113,9 @@ if __name__ == "__main__":
         test_input_manual("IR Entrada Parking", PINS["parking"]["ir_entry"])
         test_input_manual("Pulsador Salida Parking (NC)", PINS["parking"]["btn_exit"], is_button=True)
         print("\n--- ZONA PUERTA ---")
-        test_led("Puerta ROJO", PINS["door"]["red"])
-        test_led("Puerta VERDE", PINS["door"]["green"])
+        test_buzzer("Buzzer Puerta", PINS["door"]["buzzer"])
         test_led("Luz Blanca", PINS["door"]["white"])
         test_servo_guiado("Cerradura Puerta", PINS["door"]["servo"])
-        test_input_manual("IR Interior Puerta", PINS["door"]["ir"])
     except KeyboardInterrupt:
         print("\n\n[!] Test cancelado.")
     finally:
