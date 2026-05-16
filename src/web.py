@@ -51,4 +51,5 @@ def run_web_server(state_dict, mq_out=None, cmd_in=None):
     system_state = state_dict
     if mq_out: mqtt_queue = mq_out
     if cmd_in: command_queue = cmd_in
-    app.run(host='0.0.0.0', port=8080, debug=False, use_reloader=False)
+    # Forzar host 0.0.0.0 para acceso desde fuera del contenedor y quitar threaded por seguridad
+    app.run(host='0.0.0.0', port=8080, debug=False, use_reloader=False, threaded=True)
