@@ -241,7 +241,7 @@ class HardwareController:
             if self.counts["parking_btn"] >= self.THRESHOLD:
                 self.stable_parking_btn = raw_btn
                 # Solo disparamos en flanco de subida (pulsado) y con cooldown de 2s
-                if raw_btn == 1 and (now - self.last_btn_trigger > 2):
+                if raw_btn == 0 and (now - self.last_btn_trigger > 2):
                     logging.info("Hardware: Exit button pressed (Stable)")
                     self.car_waiting = False
                     self.close_parking()
