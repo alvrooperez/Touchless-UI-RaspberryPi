@@ -3,7 +3,6 @@ import logging
 import json
 import threading
 import RPi.GPIO as GPIO
-
 import paho.mqtt.client as mqtt
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(threadName)s] %(message)s')
@@ -76,6 +75,125 @@ class HardwareController:
             "door_ir": 0
         }
         self.STABLE_THRESHOLD = 3 # Ciclos necesarios para confirmar cambio (aprox 150ms)
+        
+        # Estado Inicial Físico
+        GPIO.output(self.PINS["parking_red"], GPIO.HIGH) # Rojo por defecto
+        GPIO.output(self.PINS["door_red"], GPIO.HIGH)
+        self.mover_servo_instantaneo(self.pwm_parking, ANGULO_CERRADO)
+        self.mover_servo_instantaneo(self.pwm_door, ANGULO_CERRADO)
+
+        # MQTT Setup
+        self.client = mqtt.Client()
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+        if self.mqtt_broker:
+            try:
+                self.client.connect(self.mqtt_broker, 1883, 60)
+                self.client.loop_start()
+            except Exception as e:
+                logging.error(f"MQTT connection failed: {e}")
+
+    def on_connect(self, client, userdata, flags, rc):
+        logging.info("Connected to MQTT Broker")
+        client.subscribe("home/parking/cmd")
+        client.subscribe("home/door/cmd")
+
+    def on_message(self, client, userdata, msg):
+        payload = msg.payload.decode()
+        if msg.topic == "home/parking/cmd" and payload == "OPEN":
+            self.open_parking()
+        elif msg.topic == "home/door/cmd" and payload == "UNLOCK":
+            self.unlock_door()
+
+    def calcular_duty(self, angulo):
+        return PWM_MIN + (angulo / 180.0) * (PWM_MAX - PWM_MIN)
+
+    def mover_servo_suave(self, pwm, inicio, fin):
+        paso = 1 if fin > inicio else -1
+        for angulo in range(inicio, fin + paso, paso):
+            pwm.ChangeDutyCycle(self.calcular_duty(angulo))
+            time.sleep(0.02)
+        pwm.ChangeDutyCycle(0)
+
+    def mover_servo_instantaneo(self, pwm, angulo):
+        pwm.ChangeDutyCycle(self.calcular_duty(angulo))
+        time.sleep(0.5)
+        pwm.ChangeDutyCycle(0)
+
+    def publish_state(self, topic, payload):
+        if self.mqtt_queue:
+            self.mqtt_queue.put({"topic": topic, "payload": payload})
+        if self.mqtt_broker:
+            self.client.publish(topic, json.dumps(payload))
+
+    def trigger_action(self, gesture_name):
+        current_time = time.time() * 1000
+        if current_time - self.last_action_time < self.cooldown_ms:
+            return
+            
+        if gesture_name == 'VIP_PASS':
+            logging.info("ACTION: Gesture VIP_PASS recognized.")
+            self.open_parking()
+            self.last_action_time = current_time
+        elif gesture_name == 'PASSWORD':
+            logging.info("ACTION: Gesture PASSWORD recognized.")
+            self.unlock_door()
+            self.last_action_time = current_time
+
+    def open_parking(self):
+        if not self.barrier_open:
+            logging.info("Hardware: Opening barrier...")
+            GPIO.output(self.PINS["parking_green"], GPIO.HIGH)
+            GPIO.output(self.PINS["parking_red"], GPIO.LOW)
+            self.mover_servo_suave(self.pwm_parking, ANGULO_CERRADO, ANGULO_ABIERTO)
+            self.barrier_open = True
+            self.publish_state("home/parking/status", {"barrier": "open", "car_waiting": self.car_waiting})
+
+    def close_parking(self):
+        if self.barrier_open:
+            logging.info("Hardware: Closing barrier...")
+            GPIO.output(self.PINS["parking_green"], GPIO.LOW)
+            GPIO.output(self.PINS["parking_red"], GPIO.HIGH)
+            self.mover_servo_suave(self.pwm_parking, ANGULO_ABIERTO, ANGULO_CERRADO)
+            self.barrier_open = False
+            self.publish_state("home/parking/status", {"barrier": "closed", "car_waiting": False})
+
+    def unlock_door(self):
+        if not self.door_unlocked:
+            logging.info("Hardware: Unlocking door...")
+            GPIO.output(self.PINS["door_green"], GPIO.HIGH)
+            GPIO.output(self.PINS["door_red"], GPIO.LOW)
+            self.mover_servo_suave(self.pwm_door, ANGULO_CERRADO, ANGULO_ABIERTO)
+            self.door_unlocked = True
+            self.publish_state("home/door/status", {"lock": "unlocked", "courtesy_light": "on" if self.light_on else "off"})
+            # Auto-lock after 10s
+            threading.Timer(10.0, self.lock_door).start()
+
+    def lock_door(self):
+        if self.door_unlocked:
+            logging.info("Hardware: Locking door...")
+            GPIO.output(self.PINS["door_green"], GPIO.LOW)
+            GPIO.output(self.PINS["door_red"], GPIO.HIGH)
+            self.mover_servo_suave(self.pwm_door, ANGULO_ABIERTO, ANGULO_CERRADO)
+            self.door_unlocked = False
+            self.publish_state("home/door/status", {"lock": "locked", "courtesy_light": "on" if self.light_on else "off"})
+
+    def door_light_on(self):
+        GPIO.output(self.PINS["door_light"], GPIO.HIGH)
+        if not self.light_on:
+            self.light_on = True
+            self.publish_state("home/door/status", {"lock": "unlocked" if self.door_unlocked else "locked", "courtesy_light": "on"})
+        
+        if self.light_timer:
+            self.light_timer.cancel()
+        self.light_timer = threading.Timer(10.0, self.door_light_off_callback)
+        self.light_timer.start()
+
+    def door_light_off_callback(self):
+        logging.info("Hardware: Courtesy light OFF")
+        GPIO.output(self.PINS["door_light"], GPIO.LOW)
+        self.light_on = False
+        self.publish_state("home/door/status", {"lock": "unlocked" if self.door_unlocked else "locked", "courtesy_light": "off"})
 
     def loop(self):
         # 1. Procesar Comandos Web
