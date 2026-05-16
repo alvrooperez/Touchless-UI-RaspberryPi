@@ -9,7 +9,7 @@ PINS = {
         "red": 22,
         "green": 23,
         "ir_entry": 18,
-        "btn_exit": 27 # Pulsador NC
+        "btn_exit": 13 # Pulsador NC reasignado de 27 a 13
     },
     "door": {
         "servo": 24,

@@ -20,12 +20,8 @@ class HardwareController:
         self.parking_ir_entry = LineSensor(18)
         
         # El pulsador de salida es NC (Normalmente Cerrado). 
-        # En gpiozero, Button(pull_up=True) considera que estar en ON por defecto es 'no pulsado'.
-        # Si al pulsar se ABRE el circuito, usaremos pull_up=True.
-        # Si es un botón físico que queremos detectar cuando se PULSA (y cambia de ON a OFF), 
-        # usamos 'when_pressed' o 'when_released' según corresponda.
         # Asumiendo que el botón "está en ON" y al darle se corta:
-        self.parking_btn_exit = Button(27, pull_up=True) 
+        self.parking_btn_exit = Button(13, pull_up=True) 
         
         # Door components
         self.door_servo = Servo(24)
