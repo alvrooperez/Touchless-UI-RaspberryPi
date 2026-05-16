@@ -1,6 +1,6 @@
 import time
 import sys
-from gpiozero import Servo, LED, LineSensor, Button
+from gpiozero import Servo, LED, DigitalInputDevice
 
 # Pines configurados según la especificación de diseño (BCM)
 PINS = {
@@ -44,41 +44,40 @@ def test_servo(name, pin):
         time.sleep(1.5)
         input(f"  -> ¿Se ha movido el servo {name} correctamente? (Presiona ENTER)")
         servo.close()
-    from gpiozero import Servo, LED, DigitalInputDevice
+    except Exception as e:
+        print(f"  [ERROR] No se pudo probar {name}: {e}")
 
-    # Pines configurados según la especificación de diseño (BCM)
-    ...
-    def test_sensor_manual(name, pin, is_button=False):
-        """Prueba de sensor leyendo estado bruto usando DigitalInputDevice para evitar edge detection."""
-        print(f"\n[{'BOTÓN' if is_button else 'SENSOR'}] Probando: {name} (Pin BCM {pin})")
-        try:
-            # DigitalInputDevice no registra eventos de interrupcion por defecto
-            # Usamos pull_up=True para el pulsador NC
-            device = DigitalInputDevice(pin, pull_up=True if is_button else False)
+def test_sensor_manual(name, pin, is_button=False):
+    """Prueba de sensor leyendo estado bruto usando DigitalInputDevice para evitar edge detection."""
+    print(f"\n[{'BOTÓN' if is_button else 'SENSOR'}] Probando: {name} (Pin BCM {pin})")
+    try:
+        # DigitalInputDevice no registra eventos de interrupcion por defecto
+        # Usamos pull_up=True para el pulsador NC
+        device = DigitalInputDevice(pin, pull_up=True if is_button else False)
+        
+        initial_state = device.value
+        print(f"  -> Estado inicial detectado: {'1 (HIGH/ON)' if initial_state else '0 (LOW/OFF)'}")
+        print(f"  -> {'PULSA el botón' if is_button else 'Pon tu MANO en el sensor'} para cambiar el estado (esperando 15s)...")
 
-            initial_state = device.value
-            print(f"  -> Estado inicial detectado: {'1 (HIGH/ON)' if initial_state else '0 (LOW/OFF)'}")
-            print(f"  -> {'PULSA el botón' if is_button else 'Pon tu MANO en el sensor'} para cambiar el estado (esperando 15s)...")
+        start_time = time.time()
+        changed = False
 
-            start_time = time.time()
-            changed = False
+        while time.time() - start_time < 15:
+            current_state = device.value
+            
+            # Si el estado cambia respecto al inicial, confirmamos deteccion real
+            if current_state != initial_state:
+                print(f"  [OK] ¡Cambio detectado! Nuevo estado: {current_state}")
+                changed = True
+                break
+            time.sleep(0.05)
 
-            while time.time() - start_time < 15:
-                current_state = device.value
-
-                # Si el estado cambia respecto al inicial, confirmamos deteccion real
-                if current_state != initial_state:
-                    print(f"  [OK] ¡Cambio detectado! Nuevo estado: {current_state}")
-                    changed = True
-                    break
-                time.sleep(0.05)
-
-            if not changed:
-                print(f"  [FAIL] No se detectó ningún cambio en {name}. Verifica los cables.")
-
-            device.close()
-        except Exception as e:
-            print(f"  [ERROR] Error crítico en {name}: {e}")
+        if not changed:
+            print(f"  [FAIL] No se detectó ningún cambio en {name}. Verifica los cables.")
+        
+        device.close()
+    except Exception as e:
+        print(f"  [ERROR] Error crítico en {name}: {e}")
 
 if __name__ == "__main__":
     print("================================================")
@@ -89,14 +88,15 @@ if __name__ == "__main__":
     print("================================================\n")
 
     try:
-        print("--- ZONA PARKING ---")
+        # ZONA PARKING
+        print("--- PROBANDO ZONA PARKING ---")
         test_led("Parking ROJO", PINS["parking"]["red"])
         test_led("Parking VERDE", PINS["parking"]["green"])
         test_servo("Barrera Parking", PINS["parking"]["servo"])
         test_sensor_manual("IR Entrada Parking", PINS["parking"]["ir_entry"])
         test_sensor_manual("Pulsador Salida Parking (NC)", PINS["parking"]["btn_exit"], is_button=True)
 
-        print("\n--- ZONA PUERTA ---")
+        print("\n--- PROBANDO ZONA PUERTA ---")
         test_led("Puerta ROJO (Bloqueado)", PINS["door"]["red"])
         test_led("Puerta VERDE (Desbloqueado)", PINS["door"]["green"])
         test_led("Luz Blanca (Cortesía)", PINS["door"]["white"])
