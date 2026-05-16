@@ -65,129 +65,17 @@ class HardwareController:
         self.light_on = False
         self.light_timer = None
         
-        # Registro de estados previos para detección de cambios (polling)
+        # Estados y Contadores para Debouncing (Antirrebote)
         self.prev_parking_ir = GPIO.input(self.PINS["parking_ir"])
         self.prev_parking_btn = GPIO.input(self.PINS["parking_btn"])
         self.prev_door_ir = GPIO.input(self.PINS["door_ir"])
         
-        # Estado Inicial Físico
-        GPIO.output(self.PINS["parking_red"], GPIO.HIGH) # Rojo por defecto
-        GPIO.output(self.PINS["door_red"], GPIO.HIGH)
-        self.mover_servo_instantaneo(self.pwm_parking, ANGULO_CERRADO)
-        self.mover_servo_instantaneo(self.pwm_door, ANGULO_CERRADO)
-
-        # MQTT Setup
-        self.client = mqtt.Client()
-        self.client.on_connect = self.on_connect
-        self.client.on_message = self.on_message
-        if self.mqtt_broker:
-            try:
-                self.client.connect(self.mqtt_broker, 1883, 60)
-                self.client.loop_start()
-            except Exception as e:
-                logging.error(f"MQTT connection failed: {e}")
-
-    def on_connect(self, client, userdata, flags, rc):
-        logging.info("Connected to MQTT Broker")
-        client.subscribe("home/parking/cmd")
-        client.subscribe("home/door/cmd")
-
-    def on_message(self, client, userdata, msg):
-        payload = msg.payload.decode()
-        if msg.topic == "home/parking/cmd" and payload == "OPEN":
-            self.open_parking()
-        elif msg.topic == "home/door/cmd" and payload == "UNLOCK":
-            self.unlock_door()
-
-    def calcular_duty(self, angulo):
-        return PWM_MIN + (angulo / 180.0) * (PWM_MAX - PWM_MIN)
-
-    def mover_servo_suave(self, pwm, inicio, fin):
-        paso = 1 if fin > inicio else -1
-        for angulo in range(inicio, fin + paso, paso):
-            pwm.ChangeDutyCycle(self.calcular_duty(angulo))
-            time.sleep(0.02)
-        pwm.ChangeDutyCycle(0) # Detener pulso para evitar vibración
-
-    def mover_servo_instantaneo(self, pwm, angulo):
-        pwm.ChangeDutyCycle(self.calcular_duty(angulo))
-        time.sleep(0.5)
-        pwm.ChangeDutyCycle(0)
-
-    def publish_state(self, topic, payload):
-        if self.mqtt_queue:
-            self.mqtt_queue.put({"topic": topic, "payload": payload})
-        if self.mqtt_broker:
-            self.client.publish(topic, json.dumps(payload))
-
-    def trigger_action(self, gesture_name):
-        current_time = time.time() * 1000
-        if current_time - self.last_action_time < self.cooldown_ms:
-            return
-            
-        if gesture_name == 'VIP_PASS':
-            logging.info("ACTION: Gesture VIP_PASS recognized.")
-            self.open_parking()
-            self.last_action_time = current_time
-        elif gesture_name == 'PASSWORD':
-            logging.info("ACTION: Gesture PASSWORD recognized.")
-            self.unlock_door()
-            self.last_action_time = current_time
-
-    def open_parking(self):
-        if not self.barrier_open:
-            logging.info("Hardware: Opening barrier...")
-            GPIO.output(self.PINS["parking_green"], GPIO.HIGH)
-            GPIO.output(self.PINS["parking_red"], GPIO.LOW)
-            self.mover_servo_suave(self.pwm_parking, ANGULO_CERRADO, ANGULO_ABIERTO)
-            self.barrier_open = True
-            self.publish_state("home/parking/status", {"barrier": "open", "car_waiting": self.car_waiting})
-
-    def close_parking(self):
-        if self.barrier_open:
-            logging.info("Hardware: Closing barrier...")
-            GPIO.output(self.PINS["parking_green"], GPIO.LOW)
-            GPIO.output(self.PINS["parking_red"], GPIO.HIGH)
-            self.mover_servo_suave(self.pwm_parking, ANGULO_ABIERTO, ANGULO_CERRADO)
-            self.barrier_open = False
-            self.publish_state("home/parking/status", {"barrier": "closed", "car_waiting": False})
-
-    def unlock_door(self):
-        if not self.door_unlocked:
-            logging.info("Hardware: Unlocking door...")
-            GPIO.output(self.PINS["door_green"], GPIO.HIGH)
-            GPIO.output(self.PINS["door_red"], GPIO.LOW)
-            self.mover_servo_suave(self.pwm_door, ANGULO_CERRADO, ANGULO_ABIERTO)
-            self.door_unlocked = True
-            self.publish_state("home/door/status", {"lock": "unlocked", "courtesy_light": "on" if self.light_on else "off"})
-            # Auto-lock after 10s
-            threading.Timer(10.0, self.lock_door).start()
-
-    def lock_door(self):
-        if self.door_unlocked:
-            logging.info("Hardware: Locking door...")
-            GPIO.output(self.PINS["door_green"], GPIO.LOW)
-            GPIO.output(self.PINS["door_red"], GPIO.HIGH)
-            self.mover_servo_suave(self.pwm_door, ANGULO_ABIERTO, ANGULO_CERRADO)
-            self.door_unlocked = False
-            self.publish_state("home/door/status", {"lock": "locked", "courtesy_light": "on" if self.light_on else "off"})
-
-    def door_light_on(self):
-        GPIO.output(self.PINS["door_light"], GPIO.HIGH)
-        if not self.light_on:
-            self.light_on = True
-            self.publish_state("home/door/status", {"lock": "unlocked" if self.door_unlocked else "locked", "courtesy_light": "on"})
-        
-        if self.light_timer:
-            self.light_timer.cancel()
-        self.light_timer = threading.Timer(10.0, self.door_light_off_callback)
-        self.light_timer.start()
-
-    def door_light_off_callback(self):
-        logging.info("Hardware: Courtesy light OFF")
-        GPIO.output(self.PINS["door_light"], GPIO.LOW)
-        self.light_on = False
-        self.publish_state("home/door/status", {"lock": "unlocked" if self.door_unlocked else "locked", "courtesy_light": "off"})
+        self.debounce_counts = {
+            "parking_ir": 0,
+            "parking_btn": 0,
+            "door_ir": 0
+        }
+        self.STABLE_THRESHOLD = 3 # Ciclos necesarios para confirmar cambio (aprox 150ms)
 
     def loop(self):
         # 1. Procesar Comandos Web
@@ -198,35 +86,51 @@ class HardwareController:
             elif cmd.get('zone') == 'door' and cmd.get('command') == 'UNLOCK':
                 self.unlock_door()
 
-        # 2. Polling de Sensores (Lectura Directa)
+        # 2. Polling de Sensores con Filtro de Estabilidad
         
         # Sensor IR Parking (Entrada)
         curr_parking_ir = GPIO.input(self.PINS["parking_ir"])
         if curr_parking_ir != self.prev_parking_ir:
-            if curr_parking_ir == 0: # Detección (Asumiendo LOW al detectar)
-                logging.info("Hardware: Car arrived at entry sensor")
-                self.car_waiting = True
-                self.publish_state("home/parking/status", {"barrier": "open" if self.barrier_open else "closed", "car_waiting": True})
-            self.prev_parking_ir = curr_parking_ir
+            self.debounce_counts["parking_ir"] += 1
+            if self.debounce_counts["parking_ir"] >= self.STABLE_THRESHOLD:
+                if curr_parking_ir == 0: # Detección real
+                    logging.info("Hardware: Car arrived at entry sensor (Stable)")
+                    self.car_waiting = True
+                    self.publish_state("home/parking/status", {"barrier": "open" if self.barrier_open else "closed", "car_waiting": True})
+                self.prev_parking_ir = curr_parking_ir
+                self.debounce_counts["parking_ir"] = 0
+        else:
+            self.debounce_counts["parking_ir"] = 0
 
         # Botón Parking (Salida)
         curr_parking_btn = GPIO.input(self.PINS["parking_btn"])
         if curr_parking_btn != self.prev_parking_btn:
-            # Detectar pulsación (Cambio de estado)
-            logging.info("Hardware: Exit button pressed - Closing barrier")
-            self.car_waiting = False
-            self.close_parking()
-            self.prev_parking_btn = curr_parking_btn
+            self.debounce_counts["parking_btn"] += 1
+            if self.debounce_counts["parking_btn"] >= self.STABLE_THRESHOLD:
+                # Solo disparamos cuando se PULSA (circuito se abre: 0 -> 1)
+                if curr_parking_btn == 1:
+                    logging.info("Hardware: Exit button pressed (Stable) - Closing barrier")
+                    self.car_waiting = False
+                    self.close_parking()
+                self.prev_parking_btn = curr_parking_btn
+                self.debounce_counts["parking_btn"] = 0
+        else:
+            self.debounce_counts["parking_btn"] = 0
 
         # Sensor IR Puerta (Interior)
         curr_door_ir = GPIO.input(self.PINS["door_ir"])
         if curr_door_ir != self.prev_door_ir:
-            if curr_door_ir == 0: # Persona detectada
-                logging.info("Hardware: Person detected inside")
-                self.door_light_on()
-            self.prev_door_ir = curr_door_ir
+            self.debounce_counts["door_ir"] += 1
+            if self.debounce_counts["door_ir"] >= self.STABLE_THRESHOLD:
+                if curr_door_ir == 0: # Persona detectada real
+                    logging.info("Hardware: Person detected inside (Stable)")
+                    self.door_light_on()
+                self.prev_door_ir = curr_door_ir
+                self.debounce_counts["door_ir"] = 0
+        else:
+            self.debounce_counts["door_ir"] = 0
 
-        time.sleep(0.05) # Muestreo a 20Hz para buena respuesta
+        time.sleep(0.05)
 
     def __del__(self):
         GPIO.cleanup()
