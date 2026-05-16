@@ -16,7 +16,7 @@ def index():
 
 @app.route('/status')
 def status():
-    return jsonify({**system_state, "parking": parking_cache or None, "door": door_cache or None})
+    return jsonify(system_state)
 
 @app.route('/api/command', methods=['POST'])
 def command():

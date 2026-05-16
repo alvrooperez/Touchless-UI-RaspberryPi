@@ -102,7 +102,8 @@ def hardware_thread():
     hw = HardwareController(
         mqtt_broker=os.environ.get("MQTT_BROKER"),
         mqtt_queue=mqtt_queue,
-        command_queue=command_queue
+        command_queue=command_queue,
+        shared_state=shared_state
     )
     
     # Iniciar simulador de sensores si estamos en modo mock

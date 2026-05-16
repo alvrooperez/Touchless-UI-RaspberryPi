@@ -14,11 +14,12 @@ ANGULO_ABIERTO = 30
 ANGULO_CERRADO = 100
 
 class HardwareController:
-    def __init__(self, mqtt_broker=None, mqtt_queue=None, command_queue=None):
+    def __init__(self, mqtt_broker=None, mqtt_queue=None, command_queue=None,shared_state=None):
         self.mqtt_broker = mqtt_broker
         self.mqtt_queue = mqtt_queue
         self.command_queue = command_queue
-        
+        self.shared_state = shared_state if shared_state is not None else {}
+
         # Mapeo de Pines (BCM)
         self.PINS = {
             "parking_servo": 17,
@@ -129,6 +130,10 @@ class HardwareController:
         pwm.ChangeDutyCycle(0)
 
     def publish_state(self, topic, payload):
+        if topic == "home/parking/status":                                                                                                                            
+            self.shared_state["parking"] = payload                                                                                                                    
+        elif topic == "home/door/status":                                                                                                                             
+            self.shared_state["door"] = payload
         if self.mqtt_queue:
             self.mqtt_queue.put({"topic": topic, "payload": payload})
         if self.mqtt_broker:

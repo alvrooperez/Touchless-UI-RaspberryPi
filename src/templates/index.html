@@ -166,13 +166,17 @@
             if (light !== undefined) setBadge('door-light', light === 'on' ? 'Encendida' : 'Apagada', light === 'on' ? 'amber' : 'gray');
         }
 
-        // ── Fetch inicial ──────────────────────────────────────────────
-        fetch('/status').then(r => r.json()).then(d => {
-            if (d.last_gesture && d.last_gesture !== 'None')
-                document.getElementById('last-gesture').textContent = d.last_gesture;
-            if (d.parking) applyParkingState(d.parking.barrier, d.parking.car_waiting);
-            if (d.door)    applyDoorState(d.door.lock, d.door.courtesy_light);
-        }).catch(() => {});
+        // ── Fetch de estado (inicial + cada 5s como fallback) ──────────
+        function syncStatus() {
+            fetch('/status').then(r => r.json()).then(d => {
+                if (d.last_gesture && d.last_gesture !== 'None')
+                    document.getElementById('last-gesture').textContent = d.last_gesture;
+                if (d.parking) applyParkingState(d.parking.barrier, d.parking.car_waiting);
+                if (d.door)    applyDoorState(d.door.lock, d.door.courtesy_light);
+            }).catch(() => {});
+        }
+        syncStatus();
+        setInterval(syncStatus, 5000);
 
         // ── SSE con reconexión exponencial ─────────────────────────────
         let sse, retryDelay = 2000;
