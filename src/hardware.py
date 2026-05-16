@@ -55,6 +55,14 @@ class HardwareController:
         for pin in [self.PINS["parking_ir"], self.PINS["parking_btn"], self.PINS["door_ir"]]:
             GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+        # Estabilizadores para el loop de debouncing
+        self.stable_parking_ir = GPIO.input(self.PINS["parking_ir"])
+        self.stable_parking_btn = GPIO.input(self.PINS["parking_btn"])
+        self.stable_door_ir = GPIO.input(self.PINS["door_ir"])
+        self.counts = {"parking_ir": 0, "parking_btn": 0, "door_ir": 0}
+        self.THRESHOLD = 5
+        self.last_btn_trigger = 0
+
         # Lógica de Estado
         self.last_action_time = 0
         self.cooldown_ms = 2000
@@ -163,7 +171,7 @@ class HardwareController:
             logging.info("Hardware: Unlocking door...")
             GPIO.output(self.PINS["door_green"], GPIO.HIGH)
             GPIO.output(self.PINS["door_red"], GPIO.LOW)
-            self.mover_servo_suave(self.pwm_door,  ANGULO_ABIERTO,ANGULO_CERRADO)
+            self.mover_servo_suave(self.pwm_door, ANGULO_ABIERTO,ANGULO_CERRADO)
             self.door_unlocked = True
             self.publish_state("home/door/status", {"lock": "unlocked", "courtesy_light": "on" if self.light_on else "off"})
             # Auto-lock after 10s
@@ -174,7 +182,7 @@ class HardwareController:
             logging.info("Hardware: Locking door...")
             GPIO.output(self.PINS["door_green"], GPIO.LOW)
             GPIO.output(self.PINS["door_red"], GPIO.HIGH)
-            self.mover_servo_suave(self.pwm_door,ANGULO_CERRADO, ANGULO_ABIERTO)
+            self.mover_servo_suave(self.pwm_door, ANGULO_CERRADO, ANGULO_ABIERTO)
             self.door_unlocked = False
             self.publish_state("home/door/status", {"lock": "locked", "courtesy_light": "on" if self.light_on else "off"})
 
@@ -194,15 +202,6 @@ class HardwareController:
         GPIO.output(self.PINS["door_light"], GPIO.LOW)
         self.light_on = False
         self.publish_state("home/door/status", {"lock": "unlocked" if self.door_unlocked else "locked", "courtesy_light": "off"})
-
-        # Estados Confirmados y Contadores de Estabilidad
-        self.stable_parking_ir = GPIO.input(self.PINS["parking_ir"])
-        self.stable_parking_btn = GPIO.input(self.PINS["parking_btn"])
-        self.stable_door_ir = GPIO.input(self.PINS["door_ir"])
-        
-        self.counts = {"parking_ir": 0, "parking_btn": 0, "door_ir": 0}
-        self.THRESHOLD = 5 # Lecturas consecutivas para confirmar (aprox 250ms)
-        self.last_btn_trigger = 0
 
     def loop(self):
         # 1. Procesar Comandos Web

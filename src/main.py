@@ -9,7 +9,16 @@ import src.hardware
 
 # FORCE MOCKING FOR SAFETY (to run with real camera but without real GPIO)
 if os.environ.get("MOCK_HARDWARE", "0") == "1":
-    logging.info("MOCK MODE: Mocking gpiozero components for safe logic testing")
+    logging.info("MOCK MODE: Mocking RPi.GPIO and gpiozero for safe logic testing")
+    mock_gpio = MagicMock()
+    mock_gpio.input.return_value = 0
+    mock_gpio.BCM = 11
+    mock_gpio.OUT = 0
+    mock_gpio.IN = 1
+    mock_gpio.HIGH = 1
+    mock_gpio.LOW = 0
+    mock_gpio.PUD_UP = 22
+    src.hardware.GPIO = mock_gpio
     src.hardware.Servo = MagicMock()
     src.hardware.LED = MagicMock()
     src.hardware.LineSensor = MagicMock()
