@@ -28,9 +28,7 @@ class HardwareController:
             "parking_ir": 18,
             "parking_btn": 13,
             "door_servo": 24,
-            "door_red": 25,
-            "door_green": 8,
-            "door_ir": 7,
+            "door_buzzer": 7,
             "door_light": 5
         }
         
@@ -38,9 +36,9 @@ class HardwareController:
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         
-        # Salidas (LEDs y Servos)
-        for pin in [self.PINS["parking_red"], self.PINS["parking_green"], 
-                    self.PINS["door_red"], self.PINS["door_green"], self.PINS["door_light"]]:
+        # Salidas (LEDs, Buzzer y Servos)
+        for pin in [self.PINS["parking_red"], self.PINS["parking_green"],
+                    self.PINS["door_buzzer"], self.PINS["door_light"]]:
             GPIO.setup(pin, GPIO.OUT)
             GPIO.output(pin, GPIO.LOW)
             
@@ -53,14 +51,13 @@ class HardwareController:
         self.pwm_door.start(0)
         
         # Entradas (Sensores y Botón) con Pull-Up
-        for pin in [self.PINS["parking_ir"], self.PINS["parking_btn"], self.PINS["door_ir"]]:
+        for pin in [self.PINS["parking_ir"], self.PINS["parking_btn"]]:
             GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
         # Estabilizadores para el loop de debouncing
         self.stable_parking_ir = GPIO.input(self.PINS["parking_ir"])
         self.stable_parking_btn = GPIO.input(self.PINS["parking_btn"])
-        self.stable_door_ir = GPIO.input(self.PINS["door_ir"])
-        self.counts = {"parking_ir": 0, "parking_btn": 0, "door_ir": 0}
+        self.counts = {"parking_ir": 0, "parking_btn": 0}
         self.THRESHOLD = 5
         self.last_btn_trigger = 0
 
@@ -76,18 +73,15 @@ class HardwareController:
         # Estados y Contadores para Debouncing (Antirrebote)
         self.prev_parking_ir = GPIO.input(self.PINS["parking_ir"])
         self.prev_parking_btn = GPIO.input(self.PINS["parking_btn"])
-        self.prev_door_ir = GPIO.input(self.PINS["door_ir"])
-        
+
         self.debounce_counts = {
             "parking_ir": 0,
             "parking_btn": 0,
-            "door_ir": 0
         }
         self.STABLE_THRESHOLD = 3 # Ciclos necesarios para confirmar cambio (aprox 150ms)
         
         # Estado Inicial Físico
         GPIO.output(self.PINS["parking_red"], GPIO.HIGH) # Rojo por defecto
-        GPIO.output(self.PINS["door_red"], GPIO.HIGH)
         self.mover_servo_instantaneo(self.pwm_parking, ANGULO_CERRADO)
         self.mover_servo_instantaneo(self.pwm_door, ANGULO_ABIERTO)
 
@@ -174,9 +168,8 @@ class HardwareController:
     def unlock_door(self):
         if not self.door_unlocked:
             logging.info("Hardware: Unlocking door...")
-            GPIO.output(self.PINS["door_green"], GPIO.HIGH)
-            GPIO.output(self.PINS["door_red"], GPIO.LOW)
-            self.mover_servo_suave(self.pwm_door, ANGULO_ABIERTO,ANGULO_CERRADO)
+            GPIO.output(self.PINS["door_buzzer"], GPIO.HIGH)
+            self.mover_servo_suave(self.pwm_door, ANGULO_ABIERTO, ANGULO_CERRADO)
             self.door_unlocked = True
             self.publish_state("home/door/status", {"lock": "unlocked", "courtesy_light": "on" if self.light_on else "off"})
             # Auto-lock after 10s
@@ -185,8 +178,7 @@ class HardwareController:
     def lock_door(self):
         if self.door_unlocked:
             logging.info("Hardware: Locking door...")
-            GPIO.output(self.PINS["door_green"], GPIO.LOW)
-            GPIO.output(self.PINS["door_red"], GPIO.HIGH)
+            GPIO.output(self.PINS["door_buzzer"], GPIO.LOW)
             self.mover_servo_suave(self.pwm_door, ANGULO_CERRADO, ANGULO_ABIERTO)
             self.door_unlocked = False
             self.publish_state("home/door/status", {"lock": "locked", "courtesy_light": "on" if self.light_on else "off"})
@@ -253,18 +245,6 @@ class HardwareController:
                     self.last_btn_trigger = now
         else:
             self.counts["parking_btn"] = 0
-
-        # --- Sensor IR Puerta ---
-        raw_door = GPIO.input(self.PINS["door_ir"])
-        if raw_door != self.stable_door_ir:
-            self.counts["door_ir"] += 1
-            if self.counts["door_ir"] >= self.THRESHOLD:
-                self.stable_door_ir = raw_door
-                if raw_door == 1:
-                    logging.info("Hardware: Person detected (Stable)")
-                    self.door_light_on()
-        else:
-            self.counts["door_ir"] = 0
 
         time.sleep(0.05)
 
