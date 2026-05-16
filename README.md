@@ -30,6 +30,10 @@ Sistema de domótica sin contacto basado en reconocimiento de gestos para Raspbe
 | Buzzer pasivo puerta | 7 | PWM OUT |
 | Luz cortesía puerta | 5 | OUT |
 
+### Alimentación
+
+Se utiliza un **regulador de voltaje** conectado a la red eléctrica local que proporciona **5 V de entrada** y **3,3 V de salida**. Esta salida de 3,3 V alimenta todos los sensores y actuadores del sistema (servos, LEDs, sensor IR, botón, buzzer y luz de cortesía).
+
 ### Servos
 
 | Parámetro | Valor |
