@@ -37,8 +37,35 @@ mqtt_queue = queue.Queue()
 command_queue = queue.Queue()
 shared_state = {
     "last_gesture": "None",
-    "gesture_vip": os.environ.get("GESTURE_VIP", "Pointing_Up"),
-    "gesture_pwd": os.environ.get("GESTURE_PWD", "Peace_Sign"),
+    # Gesture → action mapping (empty string = unassigned)
+    "gesture_parking_open":     os.environ.get("GESTURE_VIP", "Pointing_Up"),
+    "gesture_parking_close":    "",
+    "gesture_parking_red_on":   "",
+    "gesture_parking_red_off":  "",
+    "gesture_parking_green_on": "",
+    "gesture_parking_green_off":"",
+    "gesture_door_unlock":      os.environ.get("GESTURE_PWD", "Peace_Sign"),
+    "gesture_door_lock":        "",
+    "gesture_buzzer_on":        "",
+    "gesture_buzzer_off":       "",
+    "gesture_light_on":         "",
+    "gesture_light_off":        "",
+}
+
+# Maps each action key to the command dict sent to hardware loop()
+ACTION_TO_COMMAND = {
+    "parking_open":     {"zone": "parking",       "command": "OPEN"},
+    "parking_close":    {"zone": "parking",       "command": "CLOSE"},
+    "parking_red_on":   {"zone": "parking_red",   "command": "ON"},
+    "parking_red_off":  {"zone": "parking_red",   "command": "OFF"},
+    "parking_green_on": {"zone": "parking_green", "command": "ON"},
+    "parking_green_off":{"zone": "parking_green", "command": "OFF"},
+    "door_unlock":      {"zone": "door",          "command": "UNLOCK"},
+    "door_lock":        {"zone": "door",          "command": "LOCK"},
+    "buzzer_on":        {"zone": "buzzer",        "command": "ON"},
+    "buzzer_off":       {"zone": "buzzer",        "command": "OFF"},
+    "light_on":         {"zone": "door_light",    "command": "ON"},
+    "light_off":        {"zone": "door_light",    "command": "OFF"},
 }
 
 def sensor_simulator(hw):
@@ -113,18 +140,16 @@ def hardware_thread():
     while True:
         try:
             gesture = gesture_queue.get(timeout=0.1)
-            # Read mappings dynamically so web UI changes take effect immediately
-            vip = shared_state.get("gesture_vip", "Pointing_Up")
-            pwd = shared_state.get("gesture_pwd", "Peace_Sign")
-            if gesture == vip:
-                hw.trigger_action('VIP_PASS')
-            elif gesture == pwd:
-                hw.trigger_action('PASSWORD')
+            for action_key, cmd in ACTION_TO_COMMAND.items():
+                assigned = shared_state.get(f"gesture_{action_key}", "")
+                if assigned and gesture == assigned:
+                    command_queue.put(cmd)
+                    break
         except queue.Empty: pass
         hw.loop()
 
 if __name__ == "__main__":
-    logging.info(f"System starting. VIP Gesture: {shared_state['gesture_vip']}, Door Gesture: {shared_state['gesture_pwd']}")
+    logging.info(f"System starting. Parking gesture: {shared_state['gesture_parking_open']}, Door gesture: {shared_state['gesture_door_unlock']}")
     
     t1 = threading.Thread(target=capture_thread, name="Capture")
     t2 = threading.Thread(target=inference_thread, name="Inference")
