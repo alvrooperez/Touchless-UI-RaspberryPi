@@ -163,7 +163,7 @@ class HardwareController:
             logging.info("Hardware: Unlocking door...")
             GPIO.output(self.PINS["door_green"], GPIO.HIGH)
             GPIO.output(self.PINS["door_red"], GPIO.LOW)
-            self.mover_servo_suave(self.pwm_door, ANGULO_CERRADO, ANGULO_ABIERTO)
+            self.mover_servo_suave(self.pwm_door,  ANGULO_ABIERTO,ANGULO_CERRADO)
             self.door_unlocked = True
             self.publish_state("home/door/status", {"lock": "unlocked", "courtesy_light": "on" if self.light_on else "off"})
             # Auto-lock after 10s
@@ -174,7 +174,7 @@ class HardwareController:
             logging.info("Hardware: Locking door...")
             GPIO.output(self.PINS["door_green"], GPIO.LOW)
             GPIO.output(self.PINS["door_red"], GPIO.HIGH)
-            self.mover_servo_suave(self.pwm_door, ANGULO_ABIERTO, ANGULO_CERRADO)
+            self.mover_servo_suave(self.pwm_door,ANGULO_CERRADO, ANGULO_ABIERTO)
             self.door_unlocked = False
             self.publish_state("home/door/status", {"lock": "locked", "courtesy_light": "on" if self.light_on else "off"})
 
