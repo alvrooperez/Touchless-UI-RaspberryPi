@@ -88,7 +88,7 @@ class HardwareController:
         GPIO.output(self.PINS["parking_red"], GPIO.HIGH) # Rojo por defecto
         GPIO.output(self.PINS["door_red"], GPIO.HIGH)
         self.mover_servo_instantaneo(self.pwm_parking, ANGULO_CERRADO)
-        self.mover_servo_instantaneo(self.pwm_door, ANGULO_CERRADO)
+        self.mover_servo_instantaneo(self.pwm_door, ANGULO_ABIERTO)
 
         # MQTT Setup
         self.client = mqtt.Client()
