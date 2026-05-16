@@ -211,10 +211,13 @@ class HardwareController:
         if curr_parking_ir != self.prev_parking_ir:
             self.debounce_counts["parking_ir"] += 1
             if self.debounce_counts["parking_ir"] >= self.STABLE_THRESHOLD:
-                if curr_parking_ir == 0: # Detección real
+                logging.info(f"DEBUG: Parking IR changed to {curr_parking_ir}")
+                if curr_parking_ir == 1: # Detección real según test (0 -> 1)
                     logging.info("Hardware: Car arrived at entry sensor (Stable)")
                     self.car_waiting = True
                     self.publish_state("home/parking/status", {"barrier": "open" if self.barrier_open else "closed", "car_waiting": True})
+                else:
+                    logging.info("Hardware: Entry sensor cleared")
                 self.prev_parking_ir = curr_parking_ir
                 self.debounce_counts["parking_ir"] = 0
         else:
@@ -225,8 +228,8 @@ class HardwareController:
         if curr_parking_btn != self.prev_parking_btn:
             self.debounce_counts["parking_btn"] += 1
             if self.debounce_counts["parking_btn"] >= self.STABLE_THRESHOLD:
-                # Solo disparamos cuando se PULSA (circuito se abre: 0 -> 1)
-                if curr_parking_btn == 1:
+                logging.info(f"DEBUG: Parking Button changed to {curr_parking_btn}")
+                if curr_parking_btn == 1: # Pulsación detectada según test (0 -> 1)
                     logging.info("Hardware: Exit button pressed (Stable) - Closing barrier")
                     self.car_waiting = False
                     self.close_parking()
@@ -240,7 +243,8 @@ class HardwareController:
         if curr_door_ir != self.prev_door_ir:
             self.debounce_counts["door_ir"] += 1
             if self.debounce_counts["door_ir"] >= self.STABLE_THRESHOLD:
-                if curr_door_ir == 0: # Persona detectada real
+                logging.info(f"DEBUG: Door IR changed to {curr_door_ir}")
+                if curr_door_ir == 1: # Detección real
                     logging.info("Hardware: Person detected inside (Stable)")
                     self.door_light_on()
                 self.prev_door_ir = curr_door_ir
