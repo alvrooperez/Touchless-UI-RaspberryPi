@@ -35,6 +35,16 @@ def test_led(name, pin):
     except Exception as e:
         print(f"  [ERROR] No se pudo probar {name}: {e}")
 
+# Configuración de Servos (Basado en valores del usuario)
+PWM_MIN = 0.5   # Corresponde a 0 grados aprox
+PWM_MAX = 11.0  # Corresponde a 180 grados aprox
+ANGULO_ABIERTO = 30
+ANGULO_CERRADO = 100
+
+def calcular_duty(angulo):
+    """Calcula el Duty Cycle para un ángulo dado (0-180)."""
+    return PWM_MIN + (angulo / 180.0) * (PWM_MAX - PWM_MIN)
+
 def test_servo(name, pin):
     print(f"\n[SERVO] Probando: {name} (Pin BCM {pin})")
     try:
@@ -42,15 +52,15 @@ def test_servo(name, pin):
         pwm = GPIO.PWM(pin, 50) # 50Hz
         pwm.start(0)
         
-        print("  -> Moviendo a posición 0°...")
-        pwm.ChangeDutyCycle(2.5) # 0 grados aprox
-        time.sleep(1)
+        print(f"  -> Moviendo a posición CERRADO ({ANGULO_CERRADO}°)...")
+        pwm.ChangeDutyCycle(calcular_duty(ANGULO_CERRADO))
+        time.sleep(1.5)
         
-        print("  -> Moviendo a posición 90°...")
-        pwm.ChangeDutyCycle(7.5) # 90 grados aprox
-        time.sleep(1)
+        print(f"  -> Moviendo a posición ABIERTO ({ANGULO_ABIERTO}°)...")
+        pwm.ChangeDutyCycle(calcular_duty(ANGULO_ABIERTO))
+        time.sleep(1.5)
         
-        input(f"  -> ¿Se ha movido el servo {name}? (Presiona ENTER)")
+        input(f"  -> ¿Se ha movido el servo {name} entre {ANGULO_CERRADO}° y {ANGULO_ABIERTO}°? (Presiona ENTER)")
         pwm.stop()
     except Exception as e:
         print(f"  [ERROR] No se pudo probar {name}: {e}")
