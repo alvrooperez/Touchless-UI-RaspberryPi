@@ -47,8 +47,10 @@ class HardwareController:
         
         self.pwm_parking = GPIO.PWM(self.PINS["parking_servo"], 50)
         self.pwm_door = GPIO.PWM(self.PINS["door_servo"], 50)
+        self.pwm_buzzer = GPIO.PWM(self.PINS["door_buzzer"], 1000)
         self.pwm_parking.start(0)
         self.pwm_door.start(0)
+        self.pwm_buzzer.start(0)
         
         # Entradas (Sensores y Botón) con Pull-Up
         for pin in [self.PINS["parking_ir"], self.PINS["parking_btn"]]:
@@ -168,7 +170,7 @@ class HardwareController:
     def unlock_door(self):
         if not self.door_unlocked:
             logging.info("Hardware: Unlocking door...")
-            GPIO.output(self.PINS["door_buzzer"], GPIO.HIGH)
+            self.pwm_buzzer.ChangeDutyCycle(50)
             self.mover_servo_suave(self.pwm_door, ANGULO_ABIERTO, ANGULO_CERRADO)
             self.door_unlocked = True
             self.publish_state("home/door/status", {"lock": "unlocked", "courtesy_light": "on" if self.light_on else "off"})
@@ -178,7 +180,7 @@ class HardwareController:
     def lock_door(self):
         if self.door_unlocked:
             logging.info("Hardware: Locking door...")
-            GPIO.output(self.PINS["door_buzzer"], GPIO.LOW)
+            self.pwm_buzzer.ChangeDutyCycle(0)
             self.mover_servo_suave(self.pwm_door, ANGULO_CERRADO, ANGULO_ABIERTO)
             self.door_unlocked = False
             self.publish_state("home/door/status", {"lock": "locked", "courtesy_light": "on" if self.light_on else "off"})

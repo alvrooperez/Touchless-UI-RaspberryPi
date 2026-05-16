@@ -72,8 +72,10 @@ def test_buzzer(name, pin):
     print(f"\n[BUZZER] Probando: {name} (Pin BCM {pin})")
     try:
         GPIO.setup(pin, GPIO.OUT)
-        GPIO.output(pin, GPIO.HIGH)
+        pwm = GPIO.PWM(pin, 1000)  # 1kHz — frecuencia de resonancia típica
+        pwm.start(50)              # 50% duty cycle = sonido continuo
         input(f"  -> ¿Está sonando el buzzer? (Presiona ENTER para silenciar)")
+        pwm.stop()
         GPIO.output(pin, GPIO.LOW)
         print(f"  [OK] {name} silenciado.")
     except Exception as e:
