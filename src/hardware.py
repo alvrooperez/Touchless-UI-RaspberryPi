@@ -4,13 +4,16 @@ import json
 import threading
 import RPi.GPIO as GPIO
 
+import paho.mqtt.client as mqtt
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(threadName)s] %(message)s')
 
-# Configuración de Servos (Basado en valores del usuario)
+# Configuración de Servos (Ajustado: Abierto suele ser menor ángulo en algunas maquetas, 
+# pero el usuario sospecha que están al revés, así que los invertimos)
 PWM_MIN = 0.5   
 PWM_MAX = 11.0  
-ANGULO_ABIERTO = 30
-ANGULO_CERRADO = 100
+ANGULO_ABIERTO = 100 # Invertido
+ANGULO_CERRADO = 30  # Invertido
 
 class HardwareController:
     def __init__(self, mqtt_broker=None, mqtt_queue=None, command_queue=None):
