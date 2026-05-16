@@ -169,7 +169,7 @@ class HardwareController:
     def unlock_door(self):
         if not self.door_unlocked:
             logging.info("Hardware: Unlocking door...")
-            self.pwm_buzzer.ChangeDutyCycle(50)
+            self.pwm_buzzer.ChangeDutyCycle(20)
             GPIO.output(self.PINS["door_light"], GPIO.HIGH)
             self.light_on = True
             self.mover_servo_suave(self.pwm_door, ANGULO_ABIERTO, ANGULO_CERRADO)
@@ -181,11 +181,9 @@ class HardwareController:
         if self.door_unlocked:
             logging.info("Hardware: Locking door...")
             self.pwm_buzzer.ChangeDutyCycle(0)
-            GPIO.output(self.PINS["door_light"], GPIO.LOW)
-            self.light_on = False
             self.mover_servo_suave(self.pwm_door, ANGULO_CERRADO, ANGULO_ABIERTO)
             self.door_unlocked = False
-            self.publish_state("home/door/status", {"lock": "locked", "courtesy_light": "off"})
+            self.publish_state("home/door/status", {"lock": "locked", "courtesy_light": "on" if self.light_on else "off"})
 
     def loop(self):
         # 1. Procesar Comandos Web
