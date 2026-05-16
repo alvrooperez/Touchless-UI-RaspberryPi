@@ -70,7 +70,6 @@ class HardwareController:
         self.barrier_open = False
         self.door_unlocked = False
         self.light_on = False
-        self.light_timer = None
         
         # Estados y Contadores para Debouncing (Antirrebote)
         self.prev_parking_ir = GPIO.input(self.PINS["parking_ir"])
@@ -171,36 +170,22 @@ class HardwareController:
         if not self.door_unlocked:
             logging.info("Hardware: Unlocking door...")
             self.pwm_buzzer.ChangeDutyCycle(50)
+            GPIO.output(self.PINS["door_light"], GPIO.HIGH)
+            self.light_on = True
             self.mover_servo_suave(self.pwm_door, ANGULO_ABIERTO, ANGULO_CERRADO)
             self.door_unlocked = True
-            self.publish_state("home/door/status", {"lock": "unlocked", "courtesy_light": "on" if self.light_on else "off"})
-            # Auto-lock after 10s
+            self.publish_state("home/door/status", {"lock": "unlocked", "courtesy_light": "on"})
             threading.Timer(10.0, self.lock_door).start()
 
     def lock_door(self):
         if self.door_unlocked:
             logging.info("Hardware: Locking door...")
             self.pwm_buzzer.ChangeDutyCycle(0)
+            GPIO.output(self.PINS["door_light"], GPIO.LOW)
+            self.light_on = False
             self.mover_servo_suave(self.pwm_door, ANGULO_CERRADO, ANGULO_ABIERTO)
             self.door_unlocked = False
-            self.publish_state("home/door/status", {"lock": "locked", "courtesy_light": "on" if self.light_on else "off"})
-
-    def door_light_on(self):
-        GPIO.output(self.PINS["door_light"], GPIO.HIGH)
-        if not self.light_on:
-            self.light_on = True
-            self.publish_state("home/door/status", {"lock": "unlocked" if self.door_unlocked else "locked", "courtesy_light": "on"})
-        
-        if self.light_timer:
-            self.light_timer.cancel()
-        self.light_timer = threading.Timer(10.0, self.door_light_off_callback)
-        self.light_timer.start()
-
-    def door_light_off_callback(self):
-        logging.info("Hardware: Courtesy light OFF")
-        GPIO.output(self.PINS["door_light"], GPIO.LOW)
-        self.light_on = False
-        self.publish_state("home/door/status", {"lock": "unlocked" if self.door_unlocked else "locked", "courtesy_light": "off"})
+            self.publish_state("home/door/status", {"lock": "locked", "courtesy_light": "off"})
 
     def loop(self):
         # 1. Procesar Comandos Web
