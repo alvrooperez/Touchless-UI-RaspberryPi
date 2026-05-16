@@ -7,6 +7,7 @@ services:
     privileged: true
     environment:
       - MQTT_BROKER=192.168.1.100
+      - PYTHONPATH=/app
     ports:
       - "8080:8080"
     volumes:
