@@ -189,14 +189,34 @@ class HardwareController:
         # 1. Procesar Comandos Web
         if self.command_queue and not self.command_queue.empty():
             cmd = self.command_queue.get()
-            if cmd.get('zone') == 'parking' and cmd.get('command') == 'OPEN':
+            zone, command = cmd.get('zone'), cmd.get('command')
+            if zone == 'parking' and command == 'OPEN':
                 self.open_parking()
-            elif cmd.get('zone') == 'parking' and cmd.get('command') == 'CLOSE':
+            elif zone == 'parking' and command == 'CLOSE':
                 self.close_parking()
-            elif cmd.get('zone') == 'door' and cmd.get('command') == 'UNLOCK':
+            elif zone == 'door' and command == 'UNLOCK':
                 self.unlock_door()
-            elif cmd.get('zone') == 'door' and cmd.get('command') == 'LOCK':
+            elif zone == 'door' and command == 'LOCK':
                 self.lock_door()
+            # Comandos manuales individuales
+            elif zone == 'parking_red' and command == 'ON':
+                GPIO.output(self.PINS["parking_red"], GPIO.HIGH)
+            elif zone == 'parking_red' and command == 'OFF':
+                GPIO.output(self.PINS["parking_red"], GPIO.LOW)
+            elif zone == 'parking_green' and command == 'ON':
+                GPIO.output(self.PINS["parking_green"], GPIO.HIGH)
+            elif zone == 'parking_green' and command == 'OFF':
+                GPIO.output(self.PINS["parking_green"], GPIO.LOW)
+            elif zone == 'buzzer' and command == 'ON':
+                self.pwm_buzzer.ChangeDutyCycle(20)
+            elif zone == 'buzzer' and command == 'OFF':
+                self.pwm_buzzer.ChangeDutyCycle(0)
+            elif zone == 'door_light' and command == 'ON':
+                GPIO.output(self.PINS["door_light"], GPIO.HIGH)
+                self.light_on = True
+            elif zone == 'door_light' and command == 'OFF':
+                GPIO.output(self.PINS["door_light"], GPIO.LOW)
+                self.light_on = False
 
         # 2. Detección con Integrador de Estabilidad
         now = time.time()

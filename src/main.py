@@ -35,11 +35,11 @@ frame_queue = queue.Queue(maxsize=1)
 gesture_queue = queue.Queue(maxsize=10)
 mqtt_queue = queue.Queue()
 command_queue = queue.Queue()
-shared_state = {"last_gesture": "None"}
-
-# MAPPING GESTURES TO SYSTEM ACTIONS
-GESTURE_VIP_PASS = os.environ.get("GESTURE_VIP", "Pointing_Up")
-GESTURE_PASSWORD = os.environ.get("GESTURE_PWD", "Peace_Sign")
+shared_state = {
+    "last_gesture": "None",
+    "gesture_vip": os.environ.get("GESTURE_VIP", "Pointing_Up"),
+    "gesture_pwd": os.environ.get("GESTURE_PWD", "Peace_Sign"),
+}
 
 def sensor_simulator(hw):
     """Simula eventos de sensores IR periódicamente para pruebas."""
@@ -113,18 +113,18 @@ def hardware_thread():
     while True:
         try:
             gesture = gesture_queue.get(timeout=0.1)
-            # Map detected gestures to the actions defined in hardware.py
-            if gesture == GESTURE_VIP_PASS:
+            # Read mappings dynamically so web UI changes take effect immediately
+            vip = shared_state.get("gesture_vip", "Pointing_Up")
+            pwd = shared_state.get("gesture_pwd", "Peace_Sign")
+            if gesture == vip:
                 hw.trigger_action('VIP_PASS')
-            elif gesture == GESTURE_PASSWORD:
+            elif gesture == pwd:
                 hw.trigger_action('PASSWORD')
-            else:
-                hw.trigger_action(gesture)
         except queue.Empty: pass
         hw.loop()
 
 if __name__ == "__main__":
-    logging.info(f"System starting. VIP Gesture: {GESTURE_VIP_PASS}, Door Gesture: {GESTURE_PASSWORD}")
+    logging.info(f"System starting. VIP Gesture: {shared_state['gesture_vip']}, Door Gesture: {shared_state['gesture_pwd']}")
     
     t1 = threading.Thread(target=capture_thread, name="Capture")
     t2 = threading.Thread(target=inference_thread, name="Inference")

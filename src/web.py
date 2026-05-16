@@ -10,13 +10,29 @@ command_queue = queue.Queue()
 parking_cache = {}
 door_cache = {}
 
+AVAILABLE_GESTURES = [
+    "Open_Hand", "Closed_Fist", "Peace_Sign",
+    "Pointing_Up", "Thumb_Up", "Thumb_Down", "Pinky_Up"
+]
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/status')
 def status():
-    return jsonify(system_state)
+    return jsonify({**system_state, "available_gestures": AVAILABLE_GESTURES})
+
+@app.route('/api/gesture', methods=['POST'])
+def set_gesture():
+    data = request.json
+    if not data:
+        return jsonify({"error": "invalid payload"}), 400
+    if 'vip' in data:
+        system_state['gesture_vip'] = data['vip']
+    if 'pwd' in data:
+        system_state['gesture_pwd'] = data['pwd']
+    return jsonify({"status": "ok", "gesture_vip": system_state.get('gesture_vip'), "gesture_pwd": system_state.get('gesture_pwd')}), 200
 
 @app.route('/api/command', methods=['POST'])
 def command():

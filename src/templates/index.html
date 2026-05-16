@@ -18,96 +18,201 @@
         <span id="clock" class="text-xs text-slate-400 tabular-nums"></span>
     </header>
 
-    <main class="max-w-4xl mx-auto p-6 space-y-5">
+    <div class="flex gap-5 p-5 max-w-screen-2xl mx-auto">
 
-        <!-- Gesture bar -->
-        <div class="bg-slate-800 rounded-xl border border-slate-700 px-5 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <svg class="w-5 h-5 text-slate-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 10-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 013.15 0v1.5m-3.15 0l.075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 013.15 0V15M6.9 7.575a1.575 1.575 0 10-3.15 0v8.175a6.75 6.75 0 006.75 6.75h2.018a5.25 5.25 0 003.712-1.538l1.732-1.732a5.25 5.25 0 001.538-3.712V12a1.575 1.575 0 00-3.15 0v-1.5"/>
-                </svg>
-                <span class="text-slate-400 text-sm">Último gesto</span>
-                <span id="last-gesture" class="font-mono font-bold text-cyan-400 text-sm bg-cyan-950 border border-cyan-800 px-3 py-0.5 rounded-full">—</span>
+        <!-- ══ LEFT: Modo Manual ══ -->
+        <aside class="w-56 flex-shrink-0 space-y-4">
+            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Modo Manual</h2>
+
+            <!-- Parking servo -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 space-y-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Barrera</p>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="sendCommand('parking','OPEN')"
+                        class="bg-emerald-700 hover:bg-emerald-600 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">Abrir</button>
+                    <button onclick="sendCommand('parking','CLOSE')"
+                        class="bg-slate-700 hover:bg-slate-600 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">Cerrar</button>
+                </div>
             </div>
-            <span id="last-updated" class="text-xs text-slate-600">Sin datos aún</span>
-        </div>
 
-        <!-- Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- LED Rojo -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 space-y-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">LED Rojo</p>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="sendCommand('parking_red','ON')"
+                        class="bg-red-700 hover:bg-red-600 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">ON</button>
+                    <button onclick="sendCommand('parking_red','OFF')"
+                        class="bg-slate-700 hover:bg-slate-600 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">OFF</button>
+                </div>
+            </div>
 
-            <!-- Parking Card -->
-            <div class="bg-slate-800 rounded-xl border border-slate-700 p-5 space-y-4">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+            <!-- LED Verde -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 space-y-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">LED Verde</p>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="sendCommand('parking_green','ON')"
+                        class="bg-green-700 hover:bg-green-600 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">ON</button>
+                    <button onclick="sendCommand('parking_green','OFF')"
+                        class="bg-slate-700 hover:bg-slate-600 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">OFF</button>
+                </div>
+            </div>
+
+            <!-- Cerradura -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 space-y-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Cerradura</p>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="sendCommand('door','UNLOCK')"
+                        class="bg-indigo-700 hover:bg-indigo-600 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">Abrir</button>
+                    <button onclick="sendCommand('door','LOCK')"
+                        class="bg-slate-700 hover:bg-slate-600 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">Cerrar</button>
+                </div>
+            </div>
+
+            <!-- Buzzer -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 space-y-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Buzzer</p>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="sendCommand('buzzer','ON')"
+                        class="bg-amber-700 hover:bg-amber-600 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">ON</button>
+                    <button onclick="sendCommand('buzzer','OFF')"
+                        class="bg-slate-700 hover:bg-slate-600 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">OFF</button>
+                </div>
+            </div>
+
+            <!-- Luz cortesía -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 space-y-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Luz Cortesía</p>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="sendCommand('door_light','ON')"
+                        class="bg-yellow-700 hover:bg-yellow-600 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">ON</button>
+                    <button onclick="sendCommand('door_light','OFF')"
+                        class="bg-slate-700 hover:bg-slate-600 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">OFF</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ══ CENTER: Dashboard ══ -->
+        <main class="flex-1 space-y-5 min-w-0">
+
+            <!-- Gesture bar -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 px-5 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 text-slate-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 10-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 013.15 0v1.5m-3.15 0l.075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 013.15 0V15M6.9 7.575a1.575 1.575 0 10-3.15 0v8.175a6.75 6.75 0 006.75 6.75h2.018a5.25 5.25 0 003.712-1.538l1.732-1.732a5.25 5.25 0 001.538-3.712V12a1.575 1.575 0 00-3.15 0v-1.5"/>
                     </svg>
-                    <h2 class="font-bold">Zona de Parking</h2>
+                    <span class="text-slate-400 text-sm">Último gesto</span>
+                    <span id="last-gesture" class="font-mono font-bold text-cyan-400 text-sm bg-cyan-950 border border-cyan-800 px-3 py-0.5 rounded-full">—</span>
+                </div>
+                <span id="last-updated" class="text-xs text-slate-600">Sin datos aún</span>
+            </div>
+
+            <!-- Status cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <!-- Parking Card -->
+                <div class="bg-slate-800 rounded-xl border border-slate-700 p-5 space-y-4">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+                        </svg>
+                        <h2 class="font-bold">Zona de Parking</h2>
+                    </div>
+                    <div class="space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400 text-sm">Barrera</span>
+                            <span id="parking-status" class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400">—</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400 text-sm">Coche esperando</span>
+                            <span id="parking-car" class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400">—</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button id="btn-park-open" onclick="sendCommand('parking','OPEN')"
+                            class="bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm transition active:scale-95 select-none">Abrir</button>
+                        <button id="btn-park-close" onclick="sendCommand('parking','CLOSE')"
+                            class="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm transition active:scale-95 select-none">Cerrar</button>
+                    </div>
                 </div>
 
-                <div class="space-y-2.5">
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-400 text-sm">Barrera</span>
-                        <span id="parking-status" class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400">—</span>
+                <!-- Door Card -->
+                <div class="bg-slate-800 rounded-xl border border-slate-700 p-5 space-y-4">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+                        </svg>
+                        <h2 class="font-bold">Puerta Principal</h2>
                     </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-400 text-sm">Coche esperando</span>
-                        <span id="parking-car" class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400">—</span>
+                    <div class="space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400 text-sm">Cerradura</span>
+                            <span id="door-lock" class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400">—</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400 text-sm">Luz cortesía</span>
+                            <span id="door-light" class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400">—</span>
+                        </div>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2 pt-1">
-                    <button id="btn-park-open" onclick="sendCommand('parking','OPEN')"
-                        class="bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm transition active:scale-95 select-none">
-                        Abrir
-                    </button>
-                    <button id="btn-park-close" onclick="sendCommand('parking','CLOSE')"
-                        class="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm transition active:scale-95 select-none">
-                        Cerrar
-                    </button>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button id="btn-door-unlock" onclick="sendCommand('door','UNLOCK')"
+                            class="bg-indigo-700 hover:bg-indigo-600 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm transition active:scale-95 select-none">Desbloquear</button>
+                        <button id="btn-door-lock" onclick="sendCommand('door','LOCK')"
+                            class="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm transition active:scale-95 select-none">Bloquear</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Door Card -->
-            <div class="bg-slate-800 rounded-xl border border-slate-700 p-5 space-y-4">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
-                    </svg>
-                    <h2 class="font-bold">Puerta Principal</h2>
-                </div>
-
-                <div class="space-y-2.5">
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-400 text-sm">Cerradura</span>
-                        <span id="door-lock" class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400">—</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-400 text-sm">Luz cortesía</span>
-                        <span id="door-light" class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400">—</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2 pt-1">
-                    <button id="btn-door-unlock" onclick="sendCommand('door','UNLOCK')"
-                        class="bg-indigo-700 hover:bg-indigo-600 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm transition active:scale-95 select-none">
-                        Desbloquear
-                    </button>
-                    <button id="btn-door-lock" onclick="sendCommand('door','LOCK')"
-                        class="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm transition active:scale-95 select-none">
-                        Bloquear
-                    </button>
-                </div>
+            <!-- Activity log -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-5">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Actividad reciente</h3>
+                <ul id="activity-log" class="space-y-1.5 text-sm">
+                    <li id="log-placeholder" class="text-slate-600 italic text-sm">Sin actividad aún...</li>
+                </ul>
             </div>
-        </div>
+        </main>
 
-        <!-- Activity log -->
-        <div class="bg-slate-800 rounded-xl border border-slate-700 p-5">
-            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Actividad reciente</h3>
-            <ul id="activity-log" class="space-y-1.5 text-sm">
-                <li id="log-placeholder" class="text-slate-600 italic text-sm">Sin actividad aún...</li>
-            </ul>
-        </div>
-    </main>
+        <!-- ══ RIGHT: Gestos ══ -->
+        <aside class="w-56 flex-shrink-0 space-y-4">
+            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Gestos</h2>
+
+            <!-- Gesture list -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 space-y-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Disponibles</p>
+                <ul id="gesture-list" class="space-y-1.5"></ul>
+            </div>
+
+            <!-- Gesture config -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-4 space-y-4">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Configuración</p>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs text-slate-400 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+                        Parking (VIP)
+                    </label>
+                    <select id="sel-vip"
+                        class="w-full bg-slate-900 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+                    </select>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs text-slate-400 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-indigo-400 inline-block"></span>
+                        Puerta (Password)
+                    </label>
+                    <select id="sel-pwd"
+                        class="w-full bg-slate-900 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </select>
+                </div>
+
+                <button onclick="saveGestureConfig()"
+                    class="w-full bg-slate-600 hover:bg-slate-500 py-1.5 rounded-lg text-xs font-semibold transition active:scale-95">
+                    Guardar
+                </button>
+                <p id="gesture-save-msg" class="text-xs text-center text-slate-600"></p>
+            </div>
+        </aside>
+    </div>
 
     <script>
         // ── Reloj ──────────────────────────────────────────────────────
@@ -133,7 +238,6 @@
             const ul = document.getElementById('activity-log');
             const ph = document.getElementById('log-placeholder');
             if (ph) ph.remove();
-
             const li = document.createElement('li');
             li.className = 'flex gap-3 text-slate-300';
             li.innerHTML = `<span class="text-slate-600 flex-shrink-0 tabular-nums">${new Date().toLocaleTimeString('es-ES')}</span><span>${msg}</span>`;
@@ -145,10 +249,10 @@
         function setBadge(id, text, style) {
             const el = document.getElementById(id);
             const styles = {
-                green:  'bg-emerald-950 border border-emerald-700 text-emerald-300',
-                red:    'bg-red-950 border border-red-700 text-red-300',
-                amber:  'bg-amber-950 border border-amber-700 text-amber-300',
-                gray:   'bg-slate-700 text-slate-400',
+                green: 'bg-emerald-950 border border-emerald-700 text-emerald-300',
+                red:   'bg-red-950 border border-red-700 text-red-300',
+                amber: 'bg-amber-950 border border-amber-700 text-amber-300',
+                gray:  'bg-slate-700 text-slate-400',
             };
             el.textContent = text;
             el.className = `px-3 py-0.5 rounded-full text-xs font-bold ${styles[style] || styles.gray}`;
@@ -166,13 +270,87 @@
             if (light !== undefined) setBadge('door-light', light === 'on' ? 'Encendida' : 'Apagada', light === 'on' ? 'amber' : 'gray');
         }
 
-        // ── Fetch de estado (inicial + cada 5s como fallback) ──────────
+        // ── Lista de gestos y selectores ───────────────────────────────
+        let availableGestures = [];
+
+        function buildGestureUI(gestures, currentVip, currentPwd) {
+            availableGestures = gestures;
+
+            // Lista de gestos disponibles
+            const ul = document.getElementById('gesture-list');
+            ul.innerHTML = '';
+            gestures.forEach(g => {
+                const li = document.createElement('li');
+                li.id = `gesture-item-${g}`;
+                li.className = 'text-xs font-mono px-2 py-1 rounded-md bg-slate-700 text-slate-300';
+                li.textContent = g;
+                ul.appendChild(li);
+            });
+
+            // Selectores de configuración
+            ['sel-vip', 'sel-pwd'].forEach(selId => {
+                const sel = document.getElementById(selId);
+                sel.innerHTML = '';
+                gestures.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g;
+                    opt.textContent = g;
+                    sel.appendChild(opt);
+                });
+            });
+            if (currentVip) document.getElementById('sel-vip').value = currentVip;
+            if (currentPwd) document.getElementById('sel-pwd').value = currentPwd;
+
+            highlightActiveGestures(currentVip, currentPwd);
+        }
+
+        function highlightActiveGestures(vip, pwd) {
+            availableGestures.forEach(g => {
+                const el = document.getElementById(`gesture-item-${g}`);
+                if (!el) return;
+                if (g === vip) {
+                    el.className = 'text-xs font-mono px-2 py-1 rounded-md bg-emerald-900 border border-emerald-700 text-emerald-300';
+                    el.title = 'Parking (VIP)';
+                } else if (g === pwd) {
+                    el.className = 'text-xs font-mono px-2 py-1 rounded-md bg-indigo-900 border border-indigo-700 text-indigo-300';
+                    el.title = 'Puerta (Password)';
+                } else {
+                    el.className = 'text-xs font-mono px-2 py-1 rounded-md bg-slate-700 text-slate-300';
+                    el.title = '';
+                }
+            });
+        }
+
+        function saveGestureConfig() {
+            const vip = document.getElementById('sel-vip').value;
+            const pwd = document.getElementById('sel-pwd').value;
+            const msg = document.getElementById('gesture-save-msg');
+
+            fetch('/api/gesture', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vip, pwd })
+            }).then(r => r.json()).then(d => {
+                msg.textContent = '✓ Guardado';
+                msg.className = 'text-xs text-center text-emerald-400';
+                highlightActiveGestures(d.gesture_vip, d.gesture_pwd);
+                setTimeout(() => { msg.textContent = ''; }, 2000);
+            }).catch(() => {
+                msg.textContent = '✗ Error';
+                msg.className = 'text-xs text-center text-red-400';
+            });
+        }
+
+        // ── Fetch de estado inicial ────────────────────────────────────
         function syncStatus() {
             fetch('/status').then(r => r.json()).then(d => {
                 if (d.last_gesture && d.last_gesture !== 'None')
                     document.getElementById('last-gesture').textContent = d.last_gesture;
                 if (d.parking) applyParkingState(d.parking.barrier, d.parking.car_waiting);
                 if (d.door)    applyDoorState(d.door.lock, d.door.courtesy_light);
+                if (d.available_gestures && d.available_gestures.length) {
+                    buildGestureUI(d.available_gestures, d.gesture_vip, d.gesture_pwd);
+                }
             }).catch(() => {});
         }
         syncStatus();
@@ -185,11 +363,11 @@
             const dot   = document.getElementById('conn-dot');
             const label = document.getElementById('conn-label');
             if (ok) {
-                dot.className   = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+                dot.className     = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
                 label.textContent = 'Conectado';
                 retryDelay = 2000;
             } else {
-                dot.className   = 'w-2.5 h-2.5 rounded-full bg-red-400 animate-pulse';
+                dot.className     = 'w-2.5 h-2.5 rounded-full bg-red-400 animate-pulse';
                 label.textContent = 'Desconectado — reconectando...';
             }
         }
@@ -207,7 +385,7 @@
                         addLog(d.payload.barrier === 'open' ? 'Barrera de parking abierta' : 'Barrera de parking cerrada');
                     } else if (d.topic === 'home/door/status') {
                         applyDoorState(d.payload.lock, d.payload.courtesy_light);
-                        if (d.payload.lock)            addLog(d.payload.lock === 'unlocked' ? 'Puerta desbloqueada' : 'Puerta bloqueada');
+                        if (d.payload.lock) addLog(d.payload.lock === 'unlocked' ? 'Puerta desbloqueada' : 'Puerta bloqueada');
                         if (d.payload.courtesy_light === 'on')  addLog('Luz de cortesía encendida');
                         if (d.payload.courtesy_light === 'off') addLog('Luz de cortesía apagada');
                     }
@@ -239,24 +417,22 @@
         };
 
         function sendCommand(zone, cmd) {
-            const btn = document.getElementById(BTN_IDS[`${zone}-${cmd}`]);
-            if (!btn) return;
-
-            const orig = btn.textContent;
-            btn.textContent = '...';
-            btn.disabled = true;
+            const btnId = BTN_IDS[`${zone}-${cmd}`];
+            const btn = btnId ? document.getElementById(btnId) : null;
+            const orig = btn ? btn.textContent : null;
+            if (btn) { btn.textContent = '...'; btn.disabled = true; }
 
             fetch('/api/command', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ zone, command: cmd })
             }).then(r => {
-                btn.textContent = r.ok ? '✓' : '✗';
+                if (btn) btn.textContent = r.ok ? '✓' : '✗';
                 if (r.ok) addLog(`Comando manual: ${zone} → ${cmd}`);
             }).catch(() => {
-                btn.textContent = '✗';
+                if (btn) btn.textContent = '✗';
             }).finally(() => {
-                setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
+                if (btn) setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
             });
         }
     </script>
