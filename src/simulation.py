@@ -11,6 +11,7 @@ import src.hardware
 src.hardware.Servo = MagicMock()
 src.hardware.LED = MagicMock()
 src.hardware.LineSensor = MagicMock()
+src.hardware.Button = MagicMock()
 
 from src.hardware import HardwareController
 from src.web import run_web_server

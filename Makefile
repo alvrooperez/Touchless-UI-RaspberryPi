@@ -1,51 +1,42 @@
 # Makefile para Touchless-UI-RaspberryPi
 
-.PHONY: help build up down restart logs clean
+.PHONY: help build down clean run-ui run-simulation run-camera-test test-hw
 
-# Muestra esta ayuda por defecto
 help:
 	@echo "Comandos disponibles:"
-	@echo "  make build    - Construye la imagen de Docker"
-	@echo "  make up       - Levanta los contenedores en segundo plano"
-	@echo "  make down     - Detiene y elimina los contenedores"
-	@echo "  make restart  - Reinicia los contenedores"
-	@echo "  make logs     - Muestra los logs en tiempo real"
-	@echo "  make clean    - Detiene todo y borra imágenes huérfanas"
+	@echo "  make build             - Construye las imágenes de Docker"
+	@echo "  make run-ui            - Ejecuta el sistema REAL (Hardware + Cámara)"
+	@echo "  make run-camera-test   - Prueba de Cámara con Hardware SIMULADO"
+	@echo "  make run-simulation    - Simulación TOTAL (Cámara y Hardware SIMULADOS)"
+	@echo "  make test-hw           - Test guiado e interactivo de los componentes físicos"
+	@echo "  make down              - Detiene todos los servicios"
+	@echo "  make clean             - Limpieza profunda de Docker"
 
-# Construir la imagen
 build:
 	docker compose build
 
-# Levantar el proyecto
-up:
-	docker compose up -d
+# Sistema REAL: Hardware real y Cámara real
+run-ui:
+	docker compose down
+	docker compose run --rm --name touchless_ui touchless_ui
 
-# Detener el proyecto
+# Prueba de CÁMARA: Cámara real y Hardware simulado (Logs)
+run-camera-test:
+	docker compose down
+	docker compose run --rm --name camera_test camera-test
+
+# Simulación TOTAL: Todo por software (Ideal para desarrollo rápido)
+run-simulation:
+	docker compose down
+	docker compose run --rm --name simulation simulation
+
+# Test guiado e interactivo de PINOUTS y COMPONENTES
+test-hw:
+	docker compose down
+	docker compose run --rm --name hw_test hw-test
+
 down:
 	docker compose down
 
-# Reiniciar
-restart:
-	docker compose down
-	docker compose up -d
-
-# Ver los registros (logs)
-logs:
-	docker compose logs -f
-
-# Ejecutar un test específico por nombre (Debe estar UP)
-# Ejemplo: make test test_web
-test:
-	@if [ -z "$(filter-out test,$(MAKECMDGOALS))" ]; then \
-		echo "Error: Especifica el nombre del test. Ejemplo: make test test_web"; \
-		exit 1; \
-	fi
-	docker compose exec touchless_ui python3 tests/$(filter-out test,$(MAKECMDGOALS)).py
-
-# Truco para que make no se queje de que el nombre del test no es un comando
-%:
-	@:
-
-# Limpieza profunda
 clean:
 	docker compose down --rmi all --volumes --remove-orphans

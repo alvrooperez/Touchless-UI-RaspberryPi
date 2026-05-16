@@ -4,20 +4,59 @@ import cv2
 import time
 import os
 import logging
-from vision import GestureRecognizer
-from hardware import HardwareController
-from web import run_web_server
+from unittest.mock import MagicMock
+import src.hardware
+
+# FORCE MOCKING FOR SAFETY (to run with real camera but without real GPIO)
+if os.environ.get("MOCK_HARDWARE", "0") == "1":
+    logging.info("MOCK MODE: Mocking gpiozero components for safe logic testing")
+    src.hardware.Servo = MagicMock()
+    src.hardware.LED = MagicMock()
+    src.hardware.LineSensor = MagicMock()
+    src.hardware.Button = MagicMock()
+
+from src.vision import GestureRecognizer
+from src.hardware import HardwareController
+from src.web import run_web_server
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(threadName)s] %(message)s')
 
+# Shared structures
 frame_queue = queue.Queue(maxsize=1)
 gesture_queue = queue.Queue(maxsize=10)
 mqtt_queue = queue.Queue()
 command_queue = queue.Queue()
 shared_state = {"last_gesture": "None"}
 
+# MAPPING GESTURES TO SYSTEM ACTIONS
+GESTURE_VIP_PASS = os.environ.get("GESTURE_VIP", "Pointing_Up")
+GESTURE_PASSWORD = os.environ.get("GESTURE_PWD", "Peace_Sign")
+
+def sensor_simulator(hw):
+    """Simula eventos de sensores IR periódicamente para pruebas."""
+    logging.info("SIMULATOR: Sensor simulation thread started.")
+    while True:
+        time.sleep(10)
+        logging.info("SIMULATOR: Car arrived at entry sensor (Simulated)")
+        hw.on_car_arrival()
+        time.sleep(10)
+        logging.info("SIMULATOR: Car cleared exit sensor (Simulated)")
+        hw.on_car_departure()
+        time.sleep(10)
+        logging.info("SIMULATOR: Person detected at door (Simulated)")
+        hw.on_door_approach()
+
 def capture_thread():
-    cap = cv2.VideoCapture(0)
+    # Intentar con V4L2 explícitamente para mayor compatibilidad en Linux/Docker
+    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+    if not cap.isOpened():
+        logging.warning("Failed to open camera with V4L2, trying default backend...")
+        cap = cv2.VideoCapture(0)
+    
+    if not cap.isOpened():
+        logging.error("CRITICAL: Could not open camera. Please check /dev/video0 permissions.")
+        return
+
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
     while cap.isOpened():
@@ -51,15 +90,32 @@ def inference_thread():
         except queue.Empty: pass
 
 def hardware_thread():
-    hw = HardwareController(os.environ.get("MQTT_BROKER"), mqtt_queue, command_queue)
+    hw = HardwareController(
+        mqtt_broker=os.environ.get("MQTT_BROKER"),
+        mqtt_queue=mqtt_queue,
+        command_queue=command_queue
+    )
+    
+    # Iniciar simulador de sensores si estamos en modo mock
+    if os.environ.get("MOCK_HARDWARE") == "1":
+        threading.Thread(target=sensor_simulator, args=(hw,), name="SensorSim", daemon=True).start()
+    
     while True:
         try:
             gesture = gesture_queue.get(timeout=0.1)
-            hw.trigger_action(gesture)
+            # Map detected gestures to the actions defined in hardware.py
+            if gesture == GESTURE_VIP_PASS:
+                hw.trigger_action('VIP_PASS')
+            elif gesture == GESTURE_PASSWORD:
+                hw.trigger_action('PASSWORD')
+            else:
+                hw.trigger_action(gesture)
         except queue.Empty: pass
         hw.loop()
 
 if __name__ == "__main__":
+    logging.info(f"System starting. VIP Gesture: {GESTURE_VIP_PASS}, Door Gesture: {GESTURE_PASSWORD}")
+    
     t1 = threading.Thread(target=capture_thread, name="Capture")
     t2 = threading.Thread(target=inference_thread, name="Inference")
     t3 = threading.Thread(target=hardware_thread, name="Hardware")
