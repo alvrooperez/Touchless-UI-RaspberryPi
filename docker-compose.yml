@@ -24,3 +24,34 @@ services:
       - "8081:8080"
     volumes:
       - ./src:/app/src
+
+  camera-test:
+    build: .
+    command: ["python", "src/main.py"]
+    devices:
+      - "/dev/video0:/dev/video0"
+    privileged: true
+    environment:
+      - MQTT_BROKER=localhost
+      - MOCK_HARDWARE=1
+      - GESTURE_VIP=Pointing_Up
+      - GESTURE_PWD=Peace_Sign
+      - PYTHONPATH=/app
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./src:/app/src
+
+  hw-test:
+    build: .
+    command: ["python", "tests/hardware_guided_test.py"]
+    devices:
+      - "/dev/gpiomem:/dev/gpiomem"
+    privileged: true
+    stdin_open: true
+    tty: true
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
