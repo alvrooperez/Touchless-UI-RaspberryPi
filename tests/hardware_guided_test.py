@@ -44,44 +44,41 @@ def test_servo(name, pin):
         time.sleep(1.5)
         input(f"  -> ¿Se ha movido el servo {name} correctamente? (Presiona ENTER)")
         servo.close()
-    except Exception as e:
-        print(f"  [ERROR] No se pudo probar {name}: {e}")
+    from gpiozero import Servo, LED, DigitalInputDevice
 
-def test_sensor_manual(name, pin, is_button=False):
-    """Prueba de sensor leyendo estado bruto para evitar errores de edge detection."""
-    print(f"\n[{'BOTÓN' if is_button else 'SENSOR'}] Probando: {name} (Pin BCM {pin})")
-    try:
-        if is_button:
-            # Pulsador NC: Por defecto en ON (circuito cerrado). Al pulsar se vuelve OFF.
-            device = Button(pin, pull_up=True)
-            print(f"  -> Estado actual: {'CERRADO (ON)' if device.is_pressed else 'ABIERTO (OFF)'}")
-            print(f"  -> PULSA el botón para abrir el circuito (esperando deteccion real)...")
-        else:
-            # Sensor IR: Por defecto suele estar en OFF. Al detectar algo se vuelve ON.
-            device = LineSensor(pin)
-            print(f"  -> Estado actual: {'DETECTANDO (ON)' if device.is_active else 'LIBRE (OFF)'}")
-            print(f"  -> Pon tu mano frente al sensor {name} para cambiar el estado...")
+    # Pines configurados según la especificación de diseño (BCM)
+    ...
+    def test_sensor_manual(name, pin, is_button=False):
+        """Prueba de sensor leyendo estado bruto usando DigitalInputDevice para evitar edge detection."""
+        print(f"\n[{'BOTÓN' if is_button else 'SENSOR'}] Probando: {name} (Pin BCM {pin})")
+        try:
+            # DigitalInputDevice no registra eventos de interrupcion por defecto
+            # Usamos pull_up=True para el pulsador NC
+            device = DigitalInputDevice(pin, pull_up=True if is_button else False)
 
-        start_time = time.time()
-        initial_state = device.is_active if not is_button else device.is_pressed
-        changed = False
+            initial_state = device.value
+            print(f"  -> Estado inicial detectado: {'1 (HIGH/ON)' if initial_state else '0 (LOW/OFF)'}")
+            print(f"  -> {'PULSA el botón' if is_button else 'Pon tu MANO en el sensor'} para cambiar el estado (esperando 15s)...")
 
-        while time.time() - start_time < 15:
-            current_state = device.is_active if not is_button else device.is_pressed
-            
-            # Si el estado cambia respecto al inicial, confirmamos deteccion real
-            if current_state != initial_state:
-                print(f"  [OK] ¡Cambio de estado detectado! (Estado actual: {current_state})")
-                changed = True
-                break
-            time.sleep(0.1)
+            start_time = time.time()
+            changed = False
 
-        if not changed:
-            print(f"  [FAIL] No se detectó ningún cambio en {name} (¿Está bien conectado?)")
-        
-        device.close()
-    except Exception as e:
-        print(f"  [ERROR] Error físico en {name}: {e}")
+            while time.time() - start_time < 15:
+                current_state = device.value
+
+                # Si el estado cambia respecto al inicial, confirmamos deteccion real
+                if current_state != initial_state:
+                    print(f"  [OK] ¡Cambio detectado! Nuevo estado: {current_state}")
+                    changed = True
+                    break
+                time.sleep(0.05)
+
+            if not changed:
+                print(f"  [FAIL] No se detectó ningún cambio en {name}. Verifica los cables.")
+
+            device.close()
+        except Exception as e:
+            print(f"  [ERROR] Error crítico en {name}: {e}")
 
 if __name__ == "__main__":
     print("================================================")
