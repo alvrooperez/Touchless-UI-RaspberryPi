@@ -210,8 +210,12 @@ class HardwareController:
             cmd = self.command_queue.get()
             if cmd.get('zone') == 'parking' and cmd.get('command') == 'OPEN':
                 self.open_parking()
+            elif cmd.get('zone') == 'parking' and cmd.get('command') == 'CLOSE':
+                self.close_parking()
             elif cmd.get('zone') == 'door' and cmd.get('command') == 'UNLOCK':
                 self.unlock_door()
+            elif cmd.get('zone') == 'door' and cmd.get('command') == 'LOCK':
+                self.lock_door()
 
         # 2. Detección con Integrador de Estabilidad
         now = time.time()

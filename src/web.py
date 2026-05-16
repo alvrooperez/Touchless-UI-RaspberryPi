@@ -7,6 +7,8 @@ app = Flask(__name__)
 system_state = {"last_gesture": "None"}
 mqtt_queue = queue.Queue()
 command_queue = queue.Queue()
+parking_cache = {}
+door_cache = {}
 
 @app.route('/')
 def index():
@@ -14,7 +16,7 @@ def index():
 
 @app.route('/status')
 def status():
-    return jsonify(system_state)
+    return jsonify({**system_state, "parking": parking_cache or None, "door": door_cache or None})
 
 @app.route('/api/command', methods=['POST'])
 def command():
@@ -39,6 +41,10 @@ def stream():
             try:
                 while not mqtt_queue.empty():
                     mqtt_event = mqtt_queue.get_nowait()
+                    if mqtt_event.get('topic') == 'home/parking/status':
+                        parking_cache.update(mqtt_event['payload'])
+                    elif mqtt_event.get('topic') == 'home/door/status':
+                        door_cache.update(mqtt_event['payload'])
                     yield f"data: {json.dumps(mqtt_event)}\n\n"
             except queue.Empty:
                 pass

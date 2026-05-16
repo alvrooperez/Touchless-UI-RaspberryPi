@@ -1,59 +1,258 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Touchless UI Dashboard</title>
+    <title>Touchless IoT Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen bg-slate-900 text-slate-200 font-sans p-8">
-    <h1 class="text-4xl font-bold text-center mb-8">Touchless IoT Control Panel</h1>
-    <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-        
-        <!-- Parking Card -->
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-            <h2 class="text-2xl font-bold mb-4">Parking Zone</h2>
-            <div class="mb-4">
-                <p>Status: <span id="parking-status" class="text-yellow-400 font-bold">Unknown</span></p>
-                <p>Car Waiting: <span id="parking-car" class="text-gray-400">No</span></p>
+<body class="min-h-screen bg-slate-900 text-slate-200 font-sans">
+
+    <!-- Header -->
+    <header class="border-b border-slate-700 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <span id="conn-dot" class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></span>
+            <span id="conn-label" class="text-xs text-slate-400">Conectando...</span>
+        </div>
+        <h1 class="text-lg font-bold tracking-tight">Touchless IoT Dashboard</h1>
+        <span id="clock" class="text-xs text-slate-400 tabular-nums"></span>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-6 space-y-5">
+
+        <!-- Gesture bar -->
+        <div class="bg-slate-800 rounded-xl border border-slate-700 px-5 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-slate-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 10-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 013.15 0v1.5m-3.15 0l.075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 013.15 0V15M6.9 7.575a1.575 1.575 0 10-3.15 0v8.175a6.75 6.75 0 006.75 6.75h2.018a5.25 5.25 0 003.712-1.538l1.732-1.732a5.25 5.25 0 001.538-3.712V12a1.575 1.575 0 00-3.15 0v-1.5"/>
+                </svg>
+                <span class="text-slate-400 text-sm">Último gesto</span>
+                <span id="last-gesture" class="font-mono font-bold text-cyan-400 text-sm bg-cyan-950 border border-cyan-800 px-3 py-0.5 rounded-full">—</span>
             </div>
-            <button onclick="sendCommand('parking', 'OPEN')" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded font-bold transition">Force Open Barrier</button>
+            <span id="last-updated" class="text-xs text-slate-600">Sin datos aún</span>
         </div>
 
-        <!-- Main Door Card -->
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-            <h2 class="text-2xl font-bold mb-4">Main Door</h2>
-            <div class="mb-4">
-                <p>Lock: <span id="door-lock" class="text-yellow-400 font-bold">Unknown</span></p>
-                <p>Courtesy Light: <span id="door-light" class="text-gray-400">Unknown</span></p>
+        <!-- Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            <!-- Parking Card -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-5 space-y-4">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+                    </svg>
+                    <h2 class="font-bold">Zona de Parking</h2>
+                </div>
+
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400 text-sm">Barrera</span>
+                        <span id="parking-status" class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400">—</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400 text-sm">Coche esperando</span>
+                        <span id="parking-car" class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400">—</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <button id="btn-park-open" onclick="sendCommand('parking','OPEN')"
+                        class="bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm transition active:scale-95 select-none">
+                        Abrir
+                    </button>
+                    <button id="btn-park-close" onclick="sendCommand('parking','CLOSE')"
+                        class="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm transition active:scale-95 select-none">
+                        Cerrar
+                    </button>
+                </div>
             </div>
-            <button onclick="sendCommand('door', 'UNLOCK')" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded font-bold transition">Force Unlock</button>
+
+            <!-- Door Card -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-5 space-y-4">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+                    </svg>
+                    <h2 class="font-bold">Puerta Principal</h2>
+                </div>
+
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400 text-sm">Cerradura</span>
+                        <span id="door-lock" class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400">—</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400 text-sm">Luz cortesía</span>
+                        <span id="door-light" class="px-3 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400">—</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <button id="btn-door-unlock" onclick="sendCommand('door','UNLOCK')"
+                        class="bg-indigo-700 hover:bg-indigo-600 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm transition active:scale-95 select-none">
+                        Desbloquear
+                    </button>
+                    <button id="btn-door-lock" onclick="sendCommand('door','LOCK')"
+                        class="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm transition active:scale-95 select-none">
+                        Bloquear
+                    </button>
+                </div>
+            </div>
         </div>
 
-    </div>
+        <!-- Activity log -->
+        <div class="bg-slate-800 rounded-xl border border-slate-700 p-5">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Actividad reciente</h3>
+            <ul id="activity-log" class="space-y-1.5 text-sm">
+                <li id="log-placeholder" class="text-slate-600 italic text-sm">Sin actividad aún...</li>
+            </ul>
+        </div>
+    </main>
 
     <script>
-        const sse = new EventSource('/stream');
-        sse.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.topic === 'home/parking/status') {
-                    document.getElementById('parking-status').innerText = data.payload.barrier || 'Unknown';
-                    document.getElementById('parking-car').innerText = data.payload.car_waiting ? 'Yes' : 'No';
-                } else if (data.topic === 'home/door/status') {
-                    document.getElementById('door-lock').innerText = data.payload.lock || 'Unknown';
-                    document.getElementById('door-light').innerText = data.payload.courtesy_light || 'Unknown';
-                }
-            } catch (e) {
-                console.log("Gesture or raw event:", event.data);
+        // ── Reloj ──────────────────────────────────────────────────────
+        function updateClock() {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString('es-ES');
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // ── Timestamp última actualización ─────────────────────────────
+        let lastUpdateTime = null;
+        function tickTimestamp() {
+            if (!lastUpdateTime) return;
+            const secs = Math.floor((Date.now() - lastUpdateTime) / 1000);
+            document.getElementById('last-updated').textContent =
+                secs < 5 ? 'Ahora mismo' : `Hace ${secs}s`;
+        }
+        setInterval(tickTimestamp, 1000);
+
+        // ── Log de actividad ───────────────────────────────────────────
+        const MAX_LOG = 8;
+        function addLog(msg) {
+            const ul = document.getElementById('activity-log');
+            const ph = document.getElementById('log-placeholder');
+            if (ph) ph.remove();
+
+            const li = document.createElement('li');
+            li.className = 'flex gap-3 text-slate-300';
+            li.innerHTML = `<span class="text-slate-600 flex-shrink-0 tabular-nums">${new Date().toLocaleTimeString('es-ES')}</span><span>${msg}</span>`;
+            ul.insertBefore(li, ul.firstChild);
+            if (ul.children.length > MAX_LOG) ul.removeChild(ul.lastChild);
+        }
+
+        // ── Badges de estado ───────────────────────────────────────────
+        function setBadge(id, text, style) {
+            const el = document.getElementById(id);
+            const styles = {
+                green:  'bg-emerald-950 border border-emerald-700 text-emerald-300',
+                red:    'bg-red-950 border border-red-700 text-red-300',
+                amber:  'bg-amber-950 border border-amber-700 text-amber-300',
+                gray:   'bg-slate-700 text-slate-400',
+            };
+            el.textContent = text;
+            el.className = `px-3 py-0.5 rounded-full text-xs font-bold ${styles[style] || styles.gray}`;
+        }
+
+        function applyParkingState(barrier, carWaiting) {
+            if (barrier === 'open')   setBadge('parking-status', 'ABIERTA', 'green');
+            if (barrier === 'closed') setBadge('parking-status', 'CERRADA', 'red');
+            setBadge('parking-car', carWaiting ? 'Sí' : 'No', carWaiting ? 'amber' : 'gray');
+        }
+
+        function applyDoorState(lock, light) {
+            if (lock === 'unlocked') setBadge('door-lock', 'DESBLOQUEADA', 'green');
+            if (lock === 'locked')   setBadge('door-lock', 'BLOQUEADA', 'red');
+            if (light !== undefined) setBadge('door-light', light === 'on' ? 'Encendida' : 'Apagada', light === 'on' ? 'amber' : 'gray');
+        }
+
+        // ── Fetch inicial ──────────────────────────────────────────────
+        fetch('/status').then(r => r.json()).then(d => {
+            if (d.last_gesture && d.last_gesture !== 'None')
+                document.getElementById('last-gesture').textContent = d.last_gesture;
+            if (d.parking) applyParkingState(d.parking.barrier, d.parking.car_waiting);
+            if (d.door)    applyDoorState(d.door.lock, d.door.courtesy_light);
+        }).catch(() => {});
+
+        // ── SSE con reconexión exponencial ─────────────────────────────
+        let sse, retryDelay = 2000;
+
+        function setConn(ok) {
+            const dot   = document.getElementById('conn-dot');
+            const label = document.getElementById('conn-label');
+            if (ok) {
+                dot.className   = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+                label.textContent = 'Conectado';
+                retryDelay = 2000;
+            } else {
+                dot.className   = 'w-2.5 h-2.5 rounded-full bg-red-400 animate-pulse';
+                label.textContent = 'Desconectado — reconectando...';
             }
+        }
+
+        function connectSSE() {
+            sse = new EventSource('/stream');
+            sse.onopen = () => setConn(true);
+
+            sse.onmessage = (event) => {
+                lastUpdateTime = Date.now();
+                try {
+                    const d = JSON.parse(event.data);
+                    if (d.topic === 'home/parking/status') {
+                        applyParkingState(d.payload.barrier, d.payload.car_waiting);
+                        addLog(d.payload.barrier === 'open' ? 'Barrera de parking abierta' : 'Barrera de parking cerrada');
+                    } else if (d.topic === 'home/door/status') {
+                        applyDoorState(d.payload.lock, d.payload.courtesy_light);
+                        if (d.payload.lock)            addLog(d.payload.lock === 'unlocked' ? 'Puerta desbloqueada' : 'Puerta bloqueada');
+                        if (d.payload.courtesy_light === 'on')  addLog('Luz de cortesía encendida');
+                        if (d.payload.courtesy_light === 'off') addLog('Luz de cortesía apagada');
+                    }
+                } catch {
+                    const gesture = event.data.trim();
+                    if (gesture && gesture !== 'None') {
+                        document.getElementById('last-gesture').textContent = gesture;
+                        addLog(`Gesto detectado: ${gesture}`);
+                    }
+                }
+            };
+
+            sse.onerror = () => {
+                setConn(false);
+                sse.close();
+                setTimeout(connectSSE, retryDelay);
+                retryDelay = Math.min(retryDelay * 2, 30000);
+            };
+        }
+
+        connectSSE();
+
+        // ── Envío de comandos con feedback visual ──────────────────────
+        const BTN_IDS = {
+            'parking-OPEN':  'btn-park-open',
+            'parking-CLOSE': 'btn-park-close',
+            'door-UNLOCK':   'btn-door-unlock',
+            'door-LOCK':     'btn-door-lock',
         };
 
         function sendCommand(zone, cmd) {
+            const btn = document.getElementById(BTN_IDS[`${zone}-${cmd}`]);
+            if (!btn) return;
+
+            const orig = btn.textContent;
+            btn.textContent = '...';
+            btn.disabled = true;
+
             fetch('/api/command', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ zone: zone, command: cmd })
+                body: JSON.stringify({ zone, command: cmd })
+            }).then(r => {
+                btn.textContent = r.ok ? '✓' : '✗';
+                if (r.ok) addLog(`Comando manual: ${zone} → ${cmd}`);
+            }).catch(() => {
+                btn.textContent = '✗';
+            }).finally(() => {
+                setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
             });
         }
     </script>
