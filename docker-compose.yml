@@ -13,3 +13,14 @@ services:
       - ./src:/app/src
       - ./tests:/app/tests
     restart: unless-stopped
+
+  simulation:
+    build: .
+    command: ["python", "src/simulation.py"]
+    environment:
+      - MQTT_BROKER=localhost
+      - PYTHONPATH=/app
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./src:/app/src
